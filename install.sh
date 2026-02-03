@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# --- SCRIPT DE CONFIGURAÇÃO E ATUALIZAÇÃO (ZAPPBOT COMPLETO) ---
+# --- SCRIPT DE INSTALAÇÃO COMPLETA (V2) ---
 
 TARGET_DIR="/var/www/bot-whatsapp"
+REPO_ZIP_URL="https://github.com/dinho17593/PAINEL-IA/archive/refs/tags/V2.zip"
 
 # Cores
 GREEN='\033[0;32m'
@@ -11,141 +12,138 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${GREEN}--- CONFIGURANDO SERVIDOR ZAPPBOT ---${NC}"
+echo -e "${GREEN}--- INICIANDO INSTALAÇÃO ZAPPBOT V2 ---${NC}"
 
-# Garante que pacotes essenciais estejam instalados
+# 1. Atualiza e Instala utilitários básicos
 sudo apt-get update -qq
-sudo apt-get install -y nano curl -qq
+sudo apt-get install -y nano curl unzip wget git build-essential -qq
 
-# Cria o diretório se não existir (caso esteja rodando sem git clone antes)
-if [ ! -d "$TARGET_DIR" ]; then
-    mkdir -p "$TARGET_DIR"
+# 2. Prepara o diretório
+echo -e "${YELLOW}Baixando código fonte...${NC}"
+mkdir -p "$TARGET_DIR"
+cd /tmp || exit
+wget "$REPO_ZIP_URL" -O painel.zip
+unzip -o painel.zip
+
+# Identifica a pasta extraída (geralmente PAINEL-IA-V2)
+EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "PAINEL-IA*" | head -n 1)
+
+if [ -d "$EXTRACTED_DIR" ]; then
+    echo -e "${GREEN}Código extraído. Movendo para $TARGET_DIR...${NC}"
+    # Move o conteúdo para o destino, sobrescrevendo se necessário
+    cp -rf "$EXTRACTED_DIR/"* "$TARGET_DIR/"
+    rm -rf painel.zip "$EXTRACTED_DIR"
+else
+    echo -e "${RED}Erro ao baixar ou extrair o código. Verifique a URL do repositório.${NC}"
+    exit 1
 fi
 
 cd "$TARGET_DIR" || exit 1
 
 # ===================================================
-# 1. COLETA DE DADOS DO SERVIDOR
+# 3. COLETA DE DADOS
 # ===================================================
 echo -e "${BLUE}---------------------------------------------------${NC}"
-echo -e "${BLUE}           DADOS DO SERVIDOR E SSL               ${NC}"
+echo -e "${BLUE}           CONFIGURAÇÃO DO SERVIDOR              ${NC}"
 echo -e "${BLUE}---------------------------------------------------${NC}"
 
 read -p "1. Digite seu Domínio (ex: painel.site.com): " DOMAIN
 if [ -z "$DOMAIN" ]; then
-    echo -e "${RED}Erro: O domínio é um campo obrigatório!${NC}"
+    echo -e "${RED}Erro: O domínio é obrigatório!${NC}"
     exit 1
 fi
 
-read -p "2. Digite seu E-mail (usado para o certificado SSL): " EMAIL_SSL
+read -p "2. Digite seu E-mail (para SSL): " EMAIL_SSL
 
 # ===================================================
-# 2. CONFIGURAÇÃO DO ARQUIVO .ENV
+# 4. CONFIGURAÇÃO .ENV
 # ===================================================
-
 edit_env_file() {
     echo ""
-    echo -e "${BLUE}O editor NANO será aberto. Cole suas API KEYS e configurações.${NC}"
-    echo -e "Certifique-se de definir: API_KEYS_GEMINI, SESSION_SECRET, etc."
-    echo -e "Pressione ${YELLOW}CTRL+O${NC} + ${YELLOW}ENTER${NC} para SALVAR e ${YELLOW}CTRL+X${NC} para SAIR."
-    echo -e "${GREEN}Pressione ENTER para abrir o editor...${NC}"
-    read -r
-    
+    echo -e "${BLUE}O editor NANO será aberto.${NC}"
+    echo -e "Defina suas chaves (API_KEYS_GEMINI, SESSION_SECRET, etc)."
+    echo -e "Salve com ${YELLOW}CTRL+O${NC} e saia com ${YELLOW}CTRL+X${NC}."
+    read -p "Pressione ENTER para continuar..."
     nano .env
-
     if [ ! -s .env ]; then
-        echo -e "${RED}ERRO: O arquivo .env está vazio! A instalação não pode continuar.${NC}"
+        echo -e "${RED}ERRO: .env vazio!${NC}"
         exit 1
     fi
 }
 
 if [ ! -f ".env" ]; then
-    echo ""
-    echo -e "${YELLOW}--- ARQUIVO .ENV (CRIANDO NOVO) ---${NC}"
+    echo -e "${YELLOW}Criando arquivo .env...${NC}"
     touch .env
-    # Adiciona um template básico se estiver vazio
     echo "PORT=3000" >> .env
-    echo "SESSION_SECRET=sua_chave_secreta_aqui" >> .env
-    echo "API_KEYS_GEMINI=sua_api_key_gemini_aqui" >> .env
+    echo "SESSION_SECRET=mude_isso_para_algo_seguro" >> .env
+    echo "API_KEYS_GEMINI=" >> .env
     edit_env_file
 else
-    echo ""
-    echo -e "${YELLOW}--- ARQUIVO .ENV ENCONTRADO ---${NC}"
-    read -p "Deseja editar o arquivo .env existente? (s/N): " EDIT_ENV
+    read -p "Arquivo .env já existe. Deseja editar? (s/N): " EDIT_ENV
     if [[ "${EDIT_ENV,,}" == "s" ]]; then
         edit_env_file
     fi
 fi
 
 # ===================================================
-# 3. INSTALAÇÃO DE DEPENDÊNCIAS DO SISTEMA
+# 5. INSTALAÇÃO DE DEPENDÊNCIAS (SISTEMA & NODE)
 # ===================================================
-echo -e "${YELLOW}Instalando/Atualizando dependências do sistema...${NC}"
+echo -e "${YELLOW}Instalando Node.js e dependências...${NC}"
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get update -qq
-sudo apt-get install -y nodejs nginx build-essential git python3 ffmpeg certbot python3-certbot-nginx -qq
+sudo apt-get install -y nodejs nginx python3 ffmpeg certbot python3-certbot-nginx -qq
 
-# ===================================================
-# 4. INSTALAÇÃO DOS MÓDULOS NODE.JS (ATUALIZADO)
-# ===================================================
-echo -e "${YELLOW}Instalando módulos do Node.js (Isso pode levar alguns instantes)...${NC}"
+echo -e "${YELLOW}Instalando módulos do Painel...${NC}"
+# Remove node_modules antigo para garantir instalação limpa
 rm -rf node_modules package-lock.json
 
-# Instalação explícita para garantir que todos os novos módulos estejam presentes
+# Instala todos os módulos necessários para a nova versão
 npm install express socket.io @whiskeysockets/baileys pino pino-pretty \
     qrcode @google/generative-ai telegraf node-cron mercadopago multer \
     adm-zip archiver bcrypt passport passport-google-oauth20 express-session \
     session-file-store cookie-parser axios socket.io-client dotenv --silent
 
 # ===================================================
-# 5. ESTRUTURA E PERMISSÕES (ATUALIZADO)
+# 6. ESTRUTURA E PERMISSÕES
 # ===================================================
-echo -e "${YELLOW}Verificando estrutura de arquivos e permissões...${NC}"
-
-# Cria pastas necessárias
+echo -e "${YELLOW}Configurando permissões...${NC}"
 mkdir -p uploads sessions auth_sessions
 
-# Cria arquivos JSON de banco de dados se não existirem
+# Cria arquivos JSON necessários
 for db in users.json bots.json groups.json settings.json clients.json campaigns.json payments.json; do
-    if [ ! -f "$db" ]; then 
-        if [ "$db" == "payments.json" ] || [ "$db" == "clients.json" ] || [ "$db" == "campaigns.json" ]; then
-             echo "[]" > "$db" # Cria como array vazio
+    if [ ! -f "$db" ]; then
+        if [[ "$db" == "payments.json" || "$db" == "clients.json" || "$db" == "campaigns.json" ]]; then
+             echo "[]" > "$db"
         else
-             echo "{}" > "$db" # Cria como objeto vazio
+             echo "{}" > "$db"
         fi
     fi
 done
 
-# Ajusta permissões
 chmod -R 777 uploads sessions auth_sessions *.json
 
-# Renomeia app.js para server.js se necessário (compatibilidade antiga)
+# Garante que o arquivo principal seja server.js
 if [ -f "app.js" ] && [ ! -f "server.js" ]; then mv app.js server.js; fi
 
 # ===================================================
-# 6. INICIALIZAÇÃO (PM2)
+# 7. INICIALIZAÇÃO (PM2)
 # ===================================================
-echo -e "${YELLOW}Reiniciando a aplicação com PM2...${NC}"
+echo -e "${YELLOW}Iniciando aplicação...${NC}"
 npm install pm2 -g --silent
 pm2 start server.js --name "painel" --update-env || pm2 restart painel
 pm2 save
 pm2 startup
 
 # ===================================================
-# 7. NGINX E SSL
+# 8. NGINX E SSL
 # ===================================================
-read -p "Deseja configurar/reconfigurar o Nginx e o certificado SSL para ${DOMAIN}? (s/N): " CONFIGURE_SSL
-
-if [[ "${CONFIGURE_SSL,,}" == "s" ]]; then
-    echo -e "${YELLOW}Configurando Proxy Reverso com Nginx...${NC}"
+read -p "Configurar Nginx e SSL para $DOMAIN? (s/N): " CONF_SSL
+if [[ "${CONF_SSL,,}" == "s" ]]; then
     NGINX_CONF="/etc/nginx/sites-available/bot-whatsapp"
-
     cat > $NGINX_CONF <<EOF
 server {
     server_name ${DOMAIN};
     root ${TARGET_DIR};
-    client_max_body_size 50M; # Aumentado para uploads de backup/imagens
-    
+    client_max_body_size 50M;
     location ~ /.well-known/acme-challenge { allow all; }
     location / {
         proxy_pass http://localhost:3000;
@@ -160,25 +158,13 @@ server {
     }
 }
 EOF
-
     ln -s -f $NGINX_CONF /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
     sudo nginx -t && sudo systemctl restart nginx
-
+    
     if [ ! -z "$EMAIL_SSL" ]; then
-        echo -e "${YELLOW}Gerando certificado SSL com Certbot...${NC}"
-        sudo ufw allow 'Nginx Full'
         sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos -m $EMAIL_SSL --redirect
-    else
-        echo -e "${RED}E-mail não informado. Geração de SSL ignorada.${NC}"
     fi
-else
-    echo -e "${YELLOW}Configuração de Nginx e SSL ignorada.${NC}"
 fi
 
-echo "---------------------------------------------------"
-echo -e "${GREEN}✅ INSTALAÇÃO CONCLUÍDA!${NC}"
-echo "---------------------------------------------------"
-echo "Painel acessível em: https://$DOMAIN"
-echo "Verifique a aba 'Clientes' para testar as novas funções."
-echo "---------------------------------------------------"
+echo -e "${GREEN}✅ INSTALAÇÃO CONCLUÍDA! Acesse: https://$DOMAIN${NC}"
