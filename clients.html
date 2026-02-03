@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>zappbot - Clientes</title>
+    
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <meta name="theme-color" content="#121214">
+    
+    <link rel="icon" type="image/png" href="icon-192x192.png">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --bg-body: #09090b;
+        --bg-card: #18181b; 
+        --bg-input: #09090b;
+        --bg-sidebar: rgba(24, 24, 27, 0.85); 
+        
+        --text-main: #f4f4f5;
+        --text-muted: #a1a1aa;
+        --border: rgba(255, 255, 255, 0.08); 
+        
+        --primary: #6366f1; 
+        --primary-hover: #818cf8; 
+        --primary-glow: rgba(99, 102, 241, 0.4);
+
+        --purple-dark: #2e1065;   
+        
+        --green: #10b981;
+        --red: #f43f5e;
+        --blue: #3b82f6;
+        --yellow: #f59e0b;
+        --cyan: #06b6d4;
+        
+        --header-height: 70px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 24px;
+    }
+
+    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-body); }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+    body { 
+        font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
+        background-color: var(--bg-body); 
+        background-image: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+        color: var(--text-main); 
+        margin: 0; 
+        padding-bottom: 80px; 
+        overflow-x: hidden; 
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+    
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .hidden { display: none !important; }
+    
+    .input-group { margin-bottom: 25px; position: relative; } 
+    .input-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: 600; font-size: 0.9rem; color: var(--text-main); letter-spacing: 0.02em; }
+    .help-text { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; display: block; line-height: 1.5; }
+
+    input, textarea, select { 
+        width: 100%; padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); 
+        border-radius: var(--radius-md); color: var(--text-main); font-size: 0.95rem; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s ease;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--primary); background: rgba(255,255,255,0.05); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
+    input::placeholder { color: #52525b; }
+
+    header { position: sticky; top: 0; z-index: 100; background: rgba(9, 9, 11, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+    .nav-bar { height: var(--header-height); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: relative; max-width: 1200px; margin: 0 auto; }
+    .nav-btn { background: transparent; border: 1px solid transparent; color: var(--text-muted); font-size: 1.2rem; padding: 0; cursor: pointer; border-radius: 12px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; text-decoration: none; }
+    .nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-main); border-color: var(--border); }
+    
+    .brand-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 1.3rem; font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px; white-space: nowrap; letter-spacing: -0.03em; }
+    .brand-center i { color: var(--primary); filter: drop-shadow(0 0 8px var(--primary-glow)); }
+    
+    button { cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; border: none; }
+    
+    .btn-primary { background: var(--primary); background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%); color: white; padding: 16px; border-radius: var(--radius-md); font-weight: 600; width: 100%; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .btn-primary:hover { box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5); transform: translateY(-2px); }
+    .btn-primary:disabled { background: #27272a; color: #52525b; cursor: not-allowed; box-shadow: none; transform: none; }
+
+    .btn-danger-sm { background: rgba(244, 63, 94, 0.15); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+    .btn-danger-sm:hover { background: rgba(244, 63, 94, 0.25); transform: scale(1.02); }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+    .modal-content { background: #18181b; padding: 30px; border-radius: 24px; width: 90%; max-width: 580px; border: 1px solid var(--border); animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1); max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    @keyframes slideUpFade { from { transform: translateY(40px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+    
+    .form-section { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 25px; }
+    
+    #feedback-area { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); z-index: 10000; padding: 14px 30px; border-radius: 50px; font-size: 0.95rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; width: auto; min-width: 300px; text-align: center; backdrop-filter: blur(10px); }
+    .feedback-success { background: rgba(16, 185, 129, 0.9); color: white; }
+    .feedback-error { background: rgba(244, 63, 94, 0.9); color: white; }
+
+    .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    @media (max-width: 800px) { 
+        .grid-container { grid-template-columns: 1fr; } 
+        .form-section { padding: 15px; } 
+        .container { padding: 15px; }
+    }
+
+    /* Tabela Ajustada */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .data-table th, .data-table td { 
+        padding: 12px 10px; 
+        text-align: left; 
+        border-bottom: 1px solid var(--border); 
+        vertical-align: middle;
+    }
+    .data-table th { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .data-table td {
+        font-size: 0.9rem;
+        font-weight: 500;
+        word-break: break-word;
+    }
+    
+    /* Colunas Específicas */
+    .col-check { width: 40px; text-align: center; padding-left: 5px !important; padding-right: 5px !important; }
+    .col-actions { width: 60px; text-align: center; padding-left: 5px !important; padding-right: 5px !important; }
+    
+    /* Checkbox Customizado */
+    input[type="checkbox"].row-selector, input[type="checkbox"].header-selector {
+        width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table .action-icon { cursor: pointer; color: var(--text-muted); transition: 0.2s; font-size: 1.1rem; padding: 5px; }
+    .data-table .action-icon:hover { color: var(--primary); transform: scale(1.2); }
+    .data-table .action-icon.delete:hover { color: var(--red); }
+
+    .table-wrapper {
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: auto;
+        background: var(--bg-input);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+    }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 16px; margin-top: 20px; background: rgba(255,255,255,0.01); }
+    .empty-state i { font-size: 2.5rem; margin-bottom: 15px; color: var(--primary); opacity: 0.4; }
+    .empty-state h3 { color: var(--text-main); margin: 0 0 8px 0; font-size: 1.1rem; }
+
+    .checkbox-list { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--bg-input); }
+    .checkbox-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; transition: 0.2s; cursor: pointer; }
+    .checkbox-item:hover { background: rgba(255,255,255,0.05); }
+    .checkbox-item input { width: 18px; height: 18px; accent-color: var(--primary); }
+    .checkbox-item label { font-weight: 500; }
+
+    .tag { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .tag-blue { background: rgba(59, 130, 246, 0.1); color: var(--blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+    .tag-green { background: rgba(16, 185, 129, 0.1); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.2); }
+    .tag-yellow { background: rgba(245, 158, 11, 0.1); color: var(--yellow); border: 1px solid rgba(245, 158, 11, 0.2); }
+    .tag-red { background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.2); }
+
+    /* Tabs para o Modal */
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+    .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 8px; transition: 0.2s; white-space: nowrap; }
+    .tab-btn.active { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+    .tab-btn:hover:not(.active) { color: var(--text-main); background: rgba(255,255,255,0.05); }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Estilo específico para a data no histórico */
+    .date-cell {
+        white-space: nowrap; /* Impede quebra de linha */
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    @media (max-width: 480px) {
+        .date-cell { font-size: 0.75rem; }
+    }
+
+    /* --- AJUSTE PROFISSIONAL PARA MOBILE (FULL SCREEN MODAL) --- */
+    @media (max-width: 768px) {
+        /* Remove o padding do overlay para colar nas bordas */
+        #history-modal {
+            padding: 0 !important;
+            align-items: flex-end; /* Opcional: animação vindo de baixo se quiser */
+        }
+
+        /* Modal ocupa 100% da tela */
+        #history-modal .modal-content {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 20px !important;
+            display: flex;
+            flex-direction: column;
+            border: none;
+        }
+
+        /* Faz a tabela ocupar o espaço restante */
+        #history-modal .table-wrapper {
+            flex: 1; /* Cresce para ocupar o meio */
+            max-height: none !important; /* Remove limite de altura */
+            margin-bottom: 15px;
+        }
+
+        /* Ajusta o cabeçalho do modal */
+        #history-modal h3 {
+            font-size: 1.2rem;
+        }
+        
+        /* Botão de fechar maior para toque */
+        #history-modal .fa-times {
+            font-size: 1.5rem;
+            padding: 10px;
+        }
+    }
+
+    /* Onboarding Guide Styles - FIXED */
+    @keyframes pulse-guide {
+        0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); transform: scale(1); }
+        70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); transform: scale(1.02); }
+        100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); transform: scale(1); }
+    }
+
+    .guide-highlight {
+        animation: pulse-guide 2s infinite;
+        position: relative !important; /* Forces positioning context */
+        z-index: 100 !important;       /* Brings element to top */
+        border-color: var(--primary) !important;
+        overflow: visible !important;  /* CRITICAL: Allows icon to spill out of buttons */
+    }
+
+    .guide-highlight::after {
+        content: '\f0a7'; /* Hand Pointing DOWN */
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        top: -45px; /* Moved up */
+        left: 50%;
+        transform: translateX(-50%);
+        color: var(--primary);
+        font-size: 2rem; /* Larger icon */
+        animation: bounce-guide 1s infinite alternate;
+        text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        pointer-events: none;
+        z-index: 101; /* Sits above the highlighted element */
+    }
+
+    @keyframes bounce-guide {
+        from { top: -45px; }
+        to { top: -55px; }
+    }
+    </style>
+</head>
+<body>
+    <div id="feedback-area"></div>
+
+    <header>
+        <div class="nav-bar">
+            <a href="/" class="nav-btn"><i class="fas fa-chevron-left"></i></a>
+            <div class="brand-center"><i class="fas fa-users-cog"></i> Gerenciador de Clientes</div>
+            <div style="width: 42px;"></div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- Descrição da Página -->
+        <div style="text-align: center; margin-bottom: 30px; padding: 0 10px;">
+            <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 800px; margin: 0 auto;">
+                Gerencie sua lista de contatos, configure o recebimento via Pix e crie campanhas de cobrança ou avisos automáticos para seus clientes de forma simples e eficiente.
+            </p>
+        </div>
+
+        <!-- Seção de Configuração de Pagamento (Para todos os usuários) -->
+        <div class="form-section" style="border-color: var(--cyan);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; color: var(--cyan);"><i class="fas fa-wallet"></i> Configuração de Recebimento</h3>
+                <!-- Botão para abrir o Histórico -->
+                <button class="btn-primary" onclick="openHistoryModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem; background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: none;">
+                    <i class="fas fa-history"></i> Histórico
+                </button>
+            </div>
+            <p class="help-text">Para receber pagamentos via Pix nas suas campanhas de cobrança, insira seu Token de Produção do Mercado Pago abaixo.</p>
+            <form id="user-payment-config-form" style="display: flex; gap: 15px; align-items: flex-end;">
+                <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                    <label class="input-label">Seu Token Mercado Pago (Produção)</label>
+                    <input type="text" id="user-mp-token" placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+                </div>
+                <button type="submit" id="btn-save-token" class="btn-primary" style="width: auto; background: var(--cyan); color: #000;">Salvar Token</button>
+            </form>
+        </div>
+
+        <div class="grid-container">
+            
+            <!-- Seção de Clientes -->
+            <div class="form-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <h3 style="margin:0;"><i class="fas fa-users" style="color:var(--primary)"></i> Meus Clientes</h3>
+                        <!-- Botão de Exclusão em Massa (Oculto por padrão) -->
+                        <button id="btn-bulk-delete-clients" class="btn-danger-sm hidden" onclick="deleteSelectedClients()">
+                            <i class="fas fa-trash"></i> Excluir (<span id="count-clients">0</span>)
+                        </button>
+                    </div>
+                    <button id="btn-add-client" class="btn-primary" onclick="openClientModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem;"><i class="fas fa-plus"></i> Adicionar</button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table" id="clients-table">
+                        <thead>
+                            <tr>
+                                <th class="col-check"><input type="checkbox" class="header-selector" onchange="toggleSelectAll(this, 'client-row')"></th>
+                                <th>Nome</th>
+                                <th>Número</th>
+                                <th class="col-actions">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Seção de Campanhas -->
+            <div class="form-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <h3 style="margin:0;"><i class="fas fa-bullhorn" style="color:var(--green)"></i> Campanhas</h3>
+                        <!-- Botão de Exclusão em Massa (Oculto por padrão) -->
+                        <button id="btn-bulk-delete-campaigns" class="btn-danger-sm hidden" onclick="deleteSelectedCampaigns()">
+                            <i class="fas fa-trash"></i> Excluir (<span id="count-campaigns">0</span>)
+                        </button>
+                    </div>
+                    <button id="btn-new-campaign" class="btn-primary" onclick="openCampaignModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem; background:var(--green);"><i class="fas fa-plus"></i> Nova Campanha</button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table" id="campaigns-table">
+                        <thead>
+                            <tr>
+                                <th class="col-check"><input type="checkbox" class="header-selector" onchange="toggleSelectAll(this, 'campaign-row')"></th>
+                                <th>Nome</th>
+                                <th>Tipo</th>
+                                <th>Status</th>
+                                <th class="col-actions">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Histórico Financeiro -->
+    <div id="history-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 700px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items: center;">
+                <h3 style="margin:0; color: var(--green);"><i class="fas fa-receipt"></i> Histórico Financeiro</h3>
+                <i class="fas fa-times" onclick="closeHistoryModal()" style="padding:10px; cursor:pointer; font-size: 1.2rem;"></i>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="filterPayments('approved', this)">Pagos</button>
+                <button class="tab-btn" onclick="filterPayments('pending', this)">Pendentes</button>
+            </div>
+
+            <!-- A altura será controlada pelo CSS no mobile para ocupar o espaço restante -->
+            <div class="table-wrapper" style="max-height: 50vh;">
+                <table class="data-table" id="payments-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Cliente</th>
+                            <th>Campanha</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: auto; display: flex; justify-content: flex-end; padding-top: 15px;">
+                <button class="btn-danger-sm" onclick="clearHistory()">
+                    <i class="fas fa-trash-alt"></i> Limpar Histórico
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Cliente -->
+    <div id="client-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <h3 style="margin:0;">Adicionar Clientes</h3>
+                <i class="fas fa-times" onclick="closeClientModal()" style="padding:10px; cursor:pointer;"></i>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('single')">Individual</button>
+                <button class="tab-btn" onclick="switchTab('paste')">Colar Lista</button>
+                <button class="tab-btn" onclick="switchTab('file')">Arquivo .txt</button>
+                <button class="tab-btn" onclick="switchTab('contacts')">Agenda</button>
+            </div>
+
+            <!-- Aba Individual -->
+            <div id="tab-single" class="tab-content active">
+                <form id="add-client-form">
+                    <div class="input-group">
+                        <label class="input-label">Nome do Cliente</label>
+                        <input type="text" id="client-name" placeholder="Ex: João Silva">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Número do WhatsApp</label>
+                        <span class="help-text">Se não houver código do país (55), ele será adicionado automaticamente.</span>
+                        <input type="number" id="client-number" placeholder="11999998888">
+                    </div>
+                    <button type="submit" class="btn-primary">Salvar Cliente</button>
+                </form>
+            </div>
+
+            <!-- Aba Colar Lista -->
+            <div id="tab-paste" class="tab-content">
+                <form id="add-paste-form">
+                    <div class="input-group">
+                        <label class="input-label">Cole sua lista abaixo</label>
+                        <span class="help-text">Formato: <strong>Nome, Número</strong> ou apenas <strong>Número</strong> (um por linha).<br>O código 55 será adicionado se faltar.</span>
+                        <textarea id="paste-area" rows="8" placeholder="João, 11999998888&#10;Maria; 11988887777&#10;11977776666"></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">Importar Lista</button>
+                </form>
+            </div>
+
+            <!-- Aba Arquivo -->
+            <div id="tab-file" class="tab-content">
+                <form id="add-file-form">
+                    <div class="input-group">
+                        <label class="input-label">Selecione o arquivo .txt</label>
+                        <span class="help-text">O arquivo deve conter um cliente por linha (Nome, Número ou apenas Número).</span>
+                        <input type="file" id="file-upload" accept=".txt">
+                    </div>
+                    <button type="submit" class="btn-primary">Carregar Arquivo</button>
+                </form>
+            </div>
+
+            <!-- Aba Agenda (Contact Picker) -->
+            <div id="tab-contacts" class="tab-content">
+                <div style="text-align: center; padding: 20px;">
+                    <i class="fas fa-address-book" style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"></i>
+                    <p class="help-text">Selecione múltiplos contatos diretamente da agenda do seu celular (Android/Chrome).</p>
+                    <button type="button" class="btn-primary" onclick="openContactPicker()">
+                        <i class="fas fa-mobile-alt"></i> Abrir Agenda do Celular
+                    </button>
+                    <p id="contact-picker-error" style="color: var(--red); font-size: 0.85rem; margin-top: 10px; display: none;"></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Nova Campanha / Editar Campanha -->
+    <div id="campaign-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <h3 style="margin:0;" id="campaign-modal-title">Criar Nova Campanha</h3>
+                <i class="fas fa-times" onclick="closeCampaignModal()" style="padding:10px; cursor:pointer;"></i>
+            </div>
+            <form id="campaign-form">
+                <input type="hidden" id="campaign-id">
+                <div class="input-group">
+                    <label class="input-label">Nome da Campanha</label>
+                    <input type="text" id="campaign-name" required placeholder="Ex: Cobrança Mensal Março">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Mensagem</label>
+                    <span class="help-text">Use <strong>{nome}</strong> para personalizar o nome. Para cobranças, use <strong>{valor}</strong>. O QR Code e o código Pix serão enviados junto com a mensagem.</span>
+                    <textarea id="campaign-message" rows="5" required placeholder="Olá {nome}, esta é uma cobrança de R$ {valor}."></textarea>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="input-group">
+                        <label class="input-label">Tipo</label>
+                        <select id="campaign-type" onchange="toggleCampaignValue()">
+                            <option value="aviso">Aviso / Lembrete</option>
+                            <option value="cobranca">Cobrança (com PIX)</option>
+                        </select>
+                    </div>
+                    <div class="input-group hidden" id="campaign-value-group">
+                        <label class="input-label">Valor (R$)</label>
+                        <input type="number" id="campaign-value" step="0.01" placeholder="29.90">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Agendamento</label>
+                    <select id="campaign-schedule-type" onchange="toggleScheduleInputs()">
+                        <option value="now">Enviar Agora</option>
+                        <option value="scheduled">Agendar Data/Hora</option>
+                        <option value="monthly">Mensalmente</option>
+                    </select>
+                </div>
+
+                <!-- Campo de Data e Hora (Novo) -->
+                <div class="input-group hidden" id="campaign-schedule-date-group">
+                    <label class="input-label">Data e Hora do Envio</label>
+                    <input type="datetime-local" id="campaign-schedule-date">
+                </div>
+
+                <div class="input-group hidden" id="campaign-schedule-day-group">
+                    <label class="input-label">Enviar todo dia:</label>
+                    <input type="number" id="campaign-schedule-day" min="1" max="28" value="1">
+                    <span class="help-text">Para evitar problemas com meses curtos, escolha um dia entre 1 e 28.</span>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Enviar usando o Robô:</label>
+                    <select id="campaign-bot-selector" required>
+                        <option value="">Carregando robôs...</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Enviar para os Clientes:</label>
+                    <div id="campaign-clients-list" class="checkbox-list">
+                        <p>Nenhum cliente cadastrado.</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Salvar Campanha</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let allPayments = []; // Armazena todos os pagamentos localmente para filtragem
+        
+        // Variáveis de estado para o Onboarding
+        let clientCount = 0;
+        let campaignCount = 0;
+        let hasToken = false;
+
+        // Funções de UI (Modais, Tabs)
+        const openClientModal = () => document.getElementById('client-modal').style.display = 'flex';
+        const closeClientModal = () => document.getElementById('client-modal').style.display = 'none';
+        const closeCampaignModal = () => document.getElementById('campaign-modal').style.display = 'none';
+        
+        const openHistoryModal = () => {
+            document.getElementById('history-modal').style.display = 'flex';
+            socket.emit('payments:get'); // Atualiza ao abrir
+        };
+        const closeHistoryModal = () => document.getElementById('history-modal').style.display = 'none';
+
+        window.onclick = (e) => { if(e.target.className === 'modal-overlay') e.target.style.display='none'; };
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showFeedback(success, msg) {
+            const feedbackArea = document.getElementById('feedback-area');
+            feedbackArea.textContent = msg;
+            feedbackArea.className = success ? 'feedback-success' : 'feedback-error';
+            feedbackArea.style.display = 'block';
+            setTimeout(() => feedbackArea.style.display = 'none', 4000);
+        }
+
+        function toggleCampaignValue() {
+            const type = document.getElementById('campaign-type').value;
+            const valueGroup = document.getElementById('campaign-value-group');
+            valueGroup.classList.toggle('hidden', type !== 'cobranca');
+        }
+
+        function toggleScheduleInputs() {
+            const type = document.getElementById('campaign-schedule-type').value;
+            document.getElementById('campaign-schedule-day-group').classList.toggle('hidden', type !== 'monthly');
+            document.getElementById('campaign-schedule-date-group').classList.toggle('hidden', type !== 'scheduled');
+        }
+
+        // Lógica de Normalização de Número (Adiciona 55 se necessário)
+        function normalizeNumber(num) {
+            let cleanNum = num.replace(/\D/g, '');
+            // Se tiver 10 ou 11 dígitos (DDD + Número), adiciona 55
+            if (cleanNum.length >= 10 && cleanNum.length <= 11) {
+                return '55' + cleanNum;
+            }
+            return cleanNum;
+        }
+
+        // Processamento de Texto (Linha por Linha)
+        function processTextList(text) {
+            const lines = text.split(/\r?\n/);
+            const clients = [];
+            
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                
+                // Tenta separar por vírgula ou ponto e vírgula
+                let parts = line.split(/[;,]/);
+                let name = '';
+                let number = '';
+
+                if (parts.length >= 2) {
+                    // Assumindo Nome, Numero
+                    name = parts[0].trim();
+                    number = parts[1].trim();
+                } else {
+                    // Apenas Numero
+                    number = parts[0].trim();
+                    name = 'Cliente';
+                }
+
+                const finalNumber = normalizeNumber(number);
+                
+                if (finalNumber.length >= 10) {
+                    clients.push({ name, number: finalNumber });
+                }
+            });
+            return clients;
+        }
+
+        // --- LÓGICA DE SELEÇÃO EM MASSA ---
+        function toggleSelectAll(source, className) {
+            const checkboxes = document.querySelectorAll(`.${className}`);
+            checkboxes.forEach(cb => cb.checked = source.checked);
+            updateBulkButton(className);
+        }
+
+        function updateBulkButton(className) {
+            const checkboxes = document.querySelectorAll(`.${className}:checked`);
+            const count = checkboxes.length;
+            
+            if (className === 'client-row') {
+                const btn = document.getElementById('btn-bulk-delete-clients');
+                document.getElementById('count-clients').innerText = count;
+                if (count > 0) btn.classList.remove('hidden'); else btn.classList.add('hidden');
+            } else if (className === 'campaign-row') {
+                const btn = document.getElementById('btn-bulk-delete-campaigns');
+                document.getElementById('count-campaigns').innerText = count;
+                if (count > 0) btn.classList.remove('hidden'); else btn.classList.add('hidden');
+            }
+        }
+
+        function deleteSelectedClients() {
+            const selected = Array.from(document.querySelectorAll('.client-row:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+            if (confirm(`Tem certeza que deseja excluir ${selected.length} clientes?`)) {
+                socket.emit('clients:delete-bulk', { ids: selected });
+            }
+        }
+
+        function deleteSelectedCampaigns() {
+            const selected = Array.from(document.querySelectorAll('.campaign-row:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+            if (confirm(`Tem certeza que deseja excluir ${selected.length} campanhas?`)) {
+                socket.emit('campaigns:delete-bulk', { ids: selected });
+            }
+        }
+
+        function clearHistory() {
+            if (confirm('Tem certeza que deseja apagar TODO o histórico de pagamentos? Esta ação não pode ser desfeita.')) {
+                socket.emit('payments:clear');
+            }
+        }
+
+        // Renderização de Dados
+        function renderClients(clients) {
+            const tableBody = document.querySelector('#clients-table tbody');
+            const campaignList = document.getElementById('campaign-clients-list');
+            tableBody.innerHTML = '';
+            campaignList.innerHTML = '';
+            
+            // Reseta o botão de bulk delete e o header checkbox
+            document.getElementById('btn-bulk-delete-clients').classList.add('hidden');
+            const headerCheck = document.querySelector('#clients-table .header-selector');
+            if(headerCheck) headerCheck.checked = false;
+
+            if (clients.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><i class="fas fa-user-slash"></i><h3>Nenhum cliente</h3><p>Adicione seu primeiro cliente.</p></div></td></tr>';
+                campaignList.innerHTML = '<p style="text-align:center; color: var(--text-muted);">Adicione clientes primeiro.</p>';
+                return;
+            }
+
+            clients.forEach(client => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="col-check"><input type="checkbox" class="row-selector client-row" value="${client.id}" onchange="updateBulkButton('client-row')"></td>
+                    <td>${client.name}</td>
+                    <td>${client.number}</td>
+                    <td class="col-actions"><i class="fas fa-trash action-icon delete" onclick="deleteClient('${client.id}')"></i></td>
+                `;
+                tableBody.appendChild(tr);
+
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="client-${client.id}" value="${client.id}" name="campaignClients">
+                    <label for="client-${client.id}">${client.name} (${client.number})</label>
+                `;
+                campaignList.appendChild(div);
+            });
+        }
+
+        function renderCampaigns(campaigns) {
+            const tableBody = document.querySelector('#campaigns-table tbody');
+            tableBody.innerHTML = '';
+
+            // Reseta o botão de bulk delete e o header checkbox
+            document.getElementById('btn-bulk-delete-campaigns').classList.add('hidden');
+            const headerCheck = document.querySelector('#campaigns-table .header-selector');
+            if(headerCheck) headerCheck.checked = false;
+
+            if (campaigns.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-folder-open"></i><h3>Nenhuma campanha</h3><p>Crie sua primeira campanha de avisos ou cobranças.</p></div></td></tr>';
+                return;
+            }
+
+            campaigns.forEach(c => {
+                let statusTag = '';
+                if (c.status === 'active') {
+                    statusTag = '<span class="tag tag-green">Ativa</span>';
+                } else if (c.status === 'sent') {
+                    statusTag = '<span class="tag tag-blue">Enviada</span>';
+                } else {
+                    statusTag = `<span class="tag tag-yellow">${c.status}</span>`;
+                }
+
+                const resendButton = (c.scheduleType === 'now' && c.status === 'sent') 
+                    ? `<i class="fas fa-redo-alt action-icon" title="Reenviar Campanha" onclick="resendCampaign('${c.id}')"></i>` 
+                    : '';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="col-check"><input type="checkbox" class="row-selector campaign-row" value="${c.id}" onchange="updateBulkButton('campaign-row')"></td>
+                    <td>${c.name}</td>
+                    <td>${c.type === 'cobranca' ? 'Cobrança' : 'Aviso'}</td>
+                    <td>${statusTag}</td>
+                    <td class="col-actions actions-cell">
+                        ${resendButton}
+                        <i class="fas fa-pen action-icon" title="Editar Campanha" onclick="openCampaignModal('${c.id}')"></i>
+                        <i class="fas fa-trash action-icon delete" title="Excluir Campanha" onclick="deleteCampaign('${c.id}')"></i>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function filterPayments(status, btn) {
+            // Atualiza botões
+            document.querySelectorAll('#history-modal .tab-btn').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+
+            const tableBody = document.querySelector('#payments-table tbody');
+            tableBody.innerHTML = '';
+
+            // Filtra
+            const filtered = allPayments.filter(p => p.status === status);
+
+            if (filtered.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fas fa-receipt"></i><h3>Nenhum pagamento ${status === 'approved' ? 'aprovado' : 'pendente'}</h3></div></td></tr>`;
+                return;
+            }
+
+            // Ordena por data (mais recente primeiro)
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            filtered.forEach(p => {
+                // Formatação de data para não quebrar
+                const dateObj = new Date(p.date);
+                const dateStr = dateObj.toLocaleDateString('pt-BR');
+                const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const fullDate = `${dateStr} ${timeStr}`;
+
+                const amount = parseFloat(p.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                
+                let statusBadge = '';
+                if (p.status === 'approved') statusBadge = '<span class="tag tag-green">Pago</span>';
+                else statusBadge = '<span class="tag tag-yellow">Pendente</span>';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="date-cell">${fullDate}</td>
+                    <td>${p.clientName || p.clientNumber}</td>
+                    <td>${p.campaignName || 'Desconhecida'}</td>
+                    <td style="color: var(--green); font-weight: bold;">${amount}</td>
+                    <td>${statusBadge}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function renderBotSelector(bots) {
+            const selector = document.getElementById('campaign-bot-selector');
+            selector.innerHTML = '<option value="">Selecione um Robô</option>';
+            const individualBots = bots.filter(b => b.botType === 'individual' || !b.botType);
+            if (individualBots.length === 0) {
+                selector.innerHTML = '<option value="">Nenhum robô de atendimento privado encontrado</option>';
+                return;
+            }
+            individualBots.forEach(bot => {
+                const option = document.createElement('option');
+                option.value = bot.sessionName;
+                option.textContent = `${bot.publicName || bot.sessionName} (${bot.platform})`;
+                selector.appendChild(option);
+            });
+        }
+
+        // Lógica de Formulários e Ações
+        
+        // 1. Adicionar Individual
+        document.getElementById('add-client-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('client-name').value;
+            let number = document.getElementById('client-number').value;
+            
+            // Aplica normalização no frontend também
+            number = normalizeNumber(number);
+
+            if(!name || !number) {
+                showFeedback(false, 'Preencha nome e número.');
+                return;
+            }
+
+            socket.emit('clients:add', { name, number });
+        });
+
+        // 2. Adicionar via Colar Lista
+        document.getElementById('add-paste-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = document.getElementById('paste-area').value;
+            const clients = processTextList(text);
+            
+            if (clients.length === 0) {
+                showFeedback(false, 'Nenhum cliente válido encontrado.');
+                return;
+            }
+            
+            socket.emit('clients:add-bulk', clients);
+        });
+
+        // 3. Adicionar via Arquivo
+        document.getElementById('add-file-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('file-upload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showFeedback(false, 'Selecione um arquivo.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const clients = processTextList(text);
+                
+                if (clients.length === 0) {
+                    showFeedback(false, 'Nenhum cliente válido encontrado no arquivo.');
+                    return;
+                }
+                
+                socket.emit('clients:add-bulk', clients);
+            };
+            reader.readAsText(file);
+        });
+
+        // 4. Adicionar via Agenda (Contact Picker API)
+        async function openContactPicker() {
+            const errorMsg = document.getElementById('contact-picker-error');
+            errorMsg.style.display = 'none';
+
+            // Verifica suporte à API
+            if (!('contacts' in navigator && 'select' in navigator.contacts)) {
+                errorMsg.innerText = 'Seu navegador ou dispositivo não suporta acesso direto à agenda. Tente usar o Chrome no Android.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            try {
+                const props = ['name', 'tel'];
+                const opts = { multiple: true };
+                
+                // Abre o seletor nativo
+                const contacts = await navigator.contacts.select(props, opts);
+                
+                if (contacts.length === 0) return; // Usuário cancelou
+
+                const formattedClients = [];
+                
+                contacts.forEach(contact => {
+                    const name = contact.name[0] || 'Sem Nome';
+                    
+                    // Um contato pode ter vários números, pegamos todos
+                    if (contact.tel && contact.tel.length > 0) {
+                        contact.tel.forEach(tel => {
+                            // Normaliza o número (remove caracteres não numéricos e adiciona 55 se necessário)
+                            const cleanNum = normalizeNumber(tel);
+                            if (cleanNum.length >= 10) {
+                                formattedClients.push({
+                                    name: name,
+                                    number: cleanNum
+                                });
+                            }
+                        });
+                    }
+                });
+
+                if (formattedClients.length > 0) {
+                    // Envia para o backend usando o mesmo evento de "bulk add"
+                    socket.emit('clients:add-bulk', formattedClients);
+                } else {
+                    showFeedback(false, 'Nenhum número válido encontrado nos contatos selecionados.');
+                }
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.innerText = 'Erro ao acessar contatos: ' + err.message;
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        document.getElementById('user-payment-config-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const token = document.getElementById('user-mp-token').value.trim();
+            if (!token) {
+                showFeedback(false, 'Por favor, insira um token válido.');
+                return;
+            }
+            socket.emit('user:save-mp-token', { token });
+        });
+
+        document.getElementById('campaign-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const campaignId = document.getElementById('campaign-id').value;
+            const selectedClients = Array.from(document.querySelectorAll('#campaign-clients-list input:checked')).map(input => input.value);
+            
+            if (selectedClients.length === 0) {
+                showFeedback(false, 'Selecione pelo menos um cliente.');
+                return;
+            }
+
+            const campaignData = {
+                name: document.getElementById('campaign-name').value,
+                message: document.getElementById('campaign-message').value,
+                type: document.getElementById('campaign-type').value,
+                value: document.getElementById('campaign-value').value,
+                scheduleType: document.getElementById('campaign-schedule-type').value,
+                scheduleDay: document.getElementById('campaign-schedule-day').value,
+                scheduleDate: document.getElementById('campaign-schedule-date').value, // Novo campo
+                targetBot: document.getElementById('campaign-bot-selector').value,
+                clients: selectedClients
+            };
+            
+            if (campaignData.type === 'cobranca' && (!campaignData.value || campaignData.value <= 0)) {
+                showFeedback(false, 'Para cobranças, o valor deve ser maior que zero.');
+                return;
+            }
+            if (campaignData.scheduleType === 'scheduled' && !campaignData.scheduleDate) {
+                showFeedback(false, 'Selecione a data e hora para o agendamento.');
+                return;
+            }
+            if (!campaignData.targetBot) {
+                showFeedback(false, 'Selecione um robô para enviar a campanha.');
+                return;
+            }
+
+            if (campaignId) {
+                socket.emit('campaigns:update', { id: campaignId, ...campaignData });
+            } else {
+                socket.emit('campaigns:create', campaignData);
+            }
+        });
+
+        function deleteClient(id) {
+            if (confirm('Tem certeza que deseja excluir este cliente?')) {
+                socket.emit('clients:delete', { id });
+            }
+        }
+
+        function deleteCampaign(id) {
+            if (confirm('Tem certeza que deseja excluir esta campanha? Isso irá cancelar todos os agendamentos futuros.')) {
+                socket.emit('campaigns:delete', { id });
+            }
+        }
+
+        function resendCampaign(id) {
+            if (confirm('Deseja reenviar esta campanha para os clientes selecionados nela?')) {
+                socket.emit('campaigns:resend', { id });
+            }
+        }
+
+        function openCampaignModal(campaignId = null) {
+            const form = document.getElementById('campaign-form');
+            form.reset();
+            document.getElementById('campaign-id').value = '';
+            
+            document.querySelectorAll('input[name="campaignClients"]').forEach(cb => cb.checked = false);
+
+            if (campaignId) {
+                document.getElementById('campaign-modal-title').innerText = 'Editar Campanha';
+                socket.emit('campaigns:get-single', { id: campaignId });
+            } else {
+                document.getElementById('campaign-modal-title').innerText = 'Criar Nova Campanha';
+            }
+            
+            toggleCampaignValue();
+            toggleScheduleInputs();
+            document.getElementById('campaign-modal').style.display = 'flex';
+        }
+
+        // --- ONBOARDING GUIDE SYSTEM ---
+        function updateOnboardingSteps() {
+            // Remove highlights anteriores
+            document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
+
+            // Passo 1: Nenhum cliente? Aponta para Adicionar Cliente
+            if (clientCount === 0) {
+                const btn = document.getElementById('btn-add-client');
+                if(btn) btn.classList.add('guide-highlight');
+                return;
+            }
+
+            // Passo 2: Tem clientes, mas não tem Token? Aponta para Salvar Token
+            if (!hasToken) {
+                const btn = document.getElementById('btn-save-token');
+                if(btn) btn.classList.add('guide-highlight');
+                return;
+            }
+
+            // Passo 3: Tem clientes e token, mas não tem campanhas? Aponta para Nova Campanha
+            if (campaignCount === 0) {
+                const btn = document.getElementById('btn-new-campaign');
+                if(btn) btn.classList.add('guide-highlight');
+                return;
+            }
+        }
+
+        // Listeners do Socket.IO
+        socket.on('connect', () => {
+            socket.emit('clients:get');
+            socket.emit('campaigns:get');
+            socket.emit('payments:get'); // Solicita pagamentos
+            socket.emit('bots:get-for-clients');
+            socket.emit('user:get-mp-token'); // Solicita o token salvo
+        });
+
+        socket.on('user:mp-token', (data) => {
+            if (data.token) {
+                document.getElementById('user-mp-token').value = data.token;
+                hasToken = true;
+            } else {
+                hasToken = false;
+            }
+            updateOnboardingSteps();
+        });
+
+        socket.on('clients:list', (clients) => {
+            clientCount = clients.length;
+            renderClients(clients);
+            updateOnboardingSteps();
+        });
+
+        socket.on('campaigns:list', (campaigns) => {
+            campaignCount = campaigns.length;
+            renderCampaigns(campaigns);
+            updateOnboardingSteps();
+        });
+
+        socket.on('payments:list', (payments) => {
+            allPayments = payments; // Salva localmente
+            // Renderiza a aba ativa (padrão: approved)
+            const activeTab = document.querySelector('#history-modal .tab-btn.active');
+            if (activeTab && activeTab.innerText.includes('Pendentes')) {
+                filterPayments('pending');
+            } else {
+                filterPayments('approved');
+            }
+        });
+
+        socket.on('bots:list-for-clients', (bots) => {
+            renderBotSelector(bots);
+        });
+
+        socket.on('clients:added', (result) => {
+            if (result.success) {
+                showFeedback(true, result.message || 'Cliente(s) adicionado(s)!');
+                closeClientModal();
+                document.getElementById('add-client-form').reset();
+                document.getElementById('add-paste-form').reset();
+                document.getElementById('add-file-form').reset();
+            } else {
+                showFeedback(false, result.message);
+            }
+        });
+
+        socket.on('campaigns:created', (result) => {
+            if (result.success) {
+                showFeedback(true, 'Campanha criada e agendada!');
+                closeCampaignModal();
+            } else {
+                showFeedback(false, result.message);
+            }
+        });
+
+        socket.on('campaigns:single-data', (campaign) => {
+            if (!campaign) {
+                showFeedback(false, 'Campanha não encontrada.');
+                return;
+            }
+            document.getElementById('campaign-id').value = campaign.id;
+            document.getElementById('campaign-name').value = campaign.name;
+            document.getElementById('campaign-message').value = campaign.message;
+            document.getElementById('campaign-type').value = campaign.type;
+            document.getElementById('campaign-value').value = campaign.value || '';
+            document.getElementById('campaign-schedule-type').value = campaign.scheduleType;
+            document.getElementById('campaign-schedule-day').value = campaign.scheduleDay || '1';
+            document.getElementById('campaign-schedule-date').value = campaign.scheduleDate || ''; // Preenche data
+            document.getElementById('campaign-bot-selector').value = campaign.targetBot;
+
+            campaign.clients.forEach(clientId => {
+                const checkbox = document.getElementById(`client-${clientId}`);
+                if (checkbox) checkbox.checked = true;
+            });
+
+            toggleCampaignValue();
+            toggleScheduleInputs();
+        });
+
+        socket.on('feedback', (data) => {
+            showFeedback(data.success, data.message);
+            if (data.success) {
+                closeCampaignModal();
+            }
+        });
+
+    </script>
+</body>
+</html>
