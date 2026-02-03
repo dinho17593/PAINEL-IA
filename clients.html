@@ -943,6 +943,11 @@
                 return;
             }
             socket.emit('user:save-mp-token', { token });
+            
+            // --- CORREÇÃO APLICADA AQUI ---
+            hasToken = true; // Atualiza o estado local imediatamente
+            updateOnboardingSteps(); // Força a atualização da mãozinha
+            showFeedback(true, 'Token salvo com sucesso!');
         });
 
         document.getElementById('campaign-form').addEventListener('submit', (e) => {
