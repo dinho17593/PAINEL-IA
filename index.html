@@ -197,6 +197,7 @@
     .st-waiting { color: var(--blue); border: 1px solid rgba(59, 130, 246, 0.2); background: rgba(59, 130, 246, 0.1); }
     .st-expired { background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.2); }
     .st-inactive, .st-pending { background: rgba(245, 158, 11, 0.1); color: var(--yellow); border: 1px solid rgba(245, 158, 11, 0.2); }
+    .st-starting { background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.2); }
 
     .card-body { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 15px; }
     
@@ -785,9 +786,9 @@
                             <div class="input-group"><label class="input-label">Token MercadoPago (Produção)</label><input type="text" id="mp-access-token" placeholder="APP_USR-xxxxxxxx..." required></div>
                             
                             <div class="input-group">
-                                <label class="input-label">Número de Suporte (WhatsApp)</label>
+                                <label class="input-label">Número de Suporte (WhatsApp) (Opcional)</label>
                                 <span class="help-text">Número que aparecerá no botão flutuante de suporte (com DDD).</span>
-                                <input type="number" id="admin-support-number" placeholder="5524999842338">
+                                <input type="number" id="admin-support-number" placeholder="5511956087683">
                             </div>
 
                             <div class="section-divider-title">Preços Renovação (Individual & Grupos)</div>
@@ -896,19 +897,13 @@
                     <label class="input-label">Personalidade</label>
                     <textarea id="edit-prompt" rows="8" required style="font-family: sans-serif;"></textarea>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
-                        <div>
-                            <label class="input-label">Nome do Bot</label>
-                            <input type="text" id="edit-botName" placeholder="Ex: Alfred">
-                        </div>
-                        <div id="edit-silence-wrapper">
-                            <label class="input-label">Silêncio (min)</label>
-                            <input type="number" id="edit-silenceTime" placeholder="0" min="0">
-                        </div>
+                    <div id="edit-silence-wrapper" style="margin-top: 15px;">
+                        <label class="input-label">Silêncio (min) (Opcional)</label>
+                        <input type="number" id="edit-silenceTime" placeholder="0" min="0">
                     </div>
                     
                     <div style="margin-top: 15px;">
-                        <label class="input-label">Número de Notificação</label>
+                        <label class="input-label">Número de Notificação (Opcional)</label>
                         <span class="help-text">Receba um aviso no seu WhatsApp pessoal quando o bot responder. (Ex: 5511999999999)</span>
                         <input type="number" id="edit-notificationNumber" placeholder="5511999999999">
                     </div>
@@ -948,7 +943,7 @@
                 </div>
 
                 <div style="margin-top: 15px;">
-                    <label class="input-label">Tempo de Silêncio (min)</label>
+                    <label class="input-label">Tempo de Silêncio (min) (Opcional)</label>
                     <span class="help-text">Intervalo entre respostas automáticas neste grupo.</span>
                     <input type="number" id="edit-group-silence" placeholder="0" min="0">
                 </div>
@@ -1526,6 +1521,11 @@
 
             socket.on('initial-bots-list', (bots) => { 
                 const grid = document.getElementById('bots-grid');
+                
+                // Remove o card temporário de carregamento se existir
+                const tempCard = document.getElementById('temp-bot-loading');
+                if(tempCard) tempCard.remove();
+
                 grid.innerHTML = ''; 
                 botsData = {}; 
                 
@@ -1564,6 +1564,10 @@
                 } else if (currentUser.isAdmin && !viewedUser && bot.owner !== currentUser.username) {
                     return; 
                 }
+
+                // Remove o card temporário de carregamento se existir
+                const tempCard = document.getElementById('temp-bot-loading');
+                if(tempCard) tempCard.remove();
 
                 const btn = document.getElementById('create-bot-btn');
                 if(btn.disabled && document.getElementById(`bot-${bot.sessionName}`)) {
@@ -1710,17 +1714,32 @@
                     const linkModal = document.getElementById('activation-link-modal');
                     if(linkModal) linkModal.style.display = 'none';
 
-                    setTimeout(() => {
+                    // Força atualização da lista de grupos
+                    socket.emit('get-my-groups');
+
+                    // VERIFICAÇÃO EM 3 ETAPAS PARA EVITAR FALSO POSITIVO
+                    let attempts = 0;
+                    const verifyInterval = setInterval(() => {
+                        attempts++;
+                        socket.emit('get-my-groups'); // Solicita novamente
+                        
                         let found = false;
-                        Object.values(groupsData).forEach(list => {
-                            if (list.find(g => g.groupId === data.groupId)) found = true;
-                        });
+                        if (groupsData[data.botSessionName]) {
+                            found = groupsData[data.botSessionName].find(g => g.groupId === data.groupId);
+                        }
 
                         if (found) {
-                            showFeedback(true, 'Grupo ativado! Configure agora.');
+                            clearInterval(verifyInterval);
+                            showFeedback(true, 'Grupo ativado e confirmado!');
                             openGroupEdit(data.groupId);
+                        } else if (attempts >= 3) {
+                            clearInterval(verifyInterval);
+                            // Se após 3 tentativas não aparecer, avisa o usuário para atualizar
+                            showFeedback(false, 'Grupo ativado, mas a lista não atualizou. Recarregue a página.');
                         }
-                    }, 500);
+                    }, 1500); // Tenta a cada 1.5 segundos
+                } else {
+                    showFeedback(false, data.message || 'Erro ao ativar grupo.');
                 }
             });
 
@@ -1729,6 +1748,11 @@
                     openResellModal();
                     const btn = document.getElementById('create-bot-btn');
                     btn.disabled = false; btn.innerHTML = 'Salvar e Criar Robô';
+                    
+                    // Remove o card temporário se houver erro
+                    const tempCard = document.getElementById('temp-bot-loading');
+                    if(tempCard) tempCard.remove();
+
                 } else {
                     showFeedback(d.success, d.message);
                     if (d.success && d.message.includes('ativado') || d.message.includes('pronto')) {
@@ -1737,6 +1761,10 @@
                     if (!d.success) {
                         const btn = document.getElementById('create-bot-btn');
                         btn.disabled = false; btn.innerHTML = 'Salvar e Criar Robô';
+                        
+                        // Remove o card temporário se houver erro
+                        const tempCard = document.getElementById('temp-bot-loading');
+                        if(tempCard) tempCard.remove();
                     } else {
                         closeCreateModal();
                         const btn = document.getElementById('create-bot-btn');
@@ -2302,6 +2330,7 @@
 
         function openPairingModal(sessionName) {
             document.getElementById('pairing-sessionName-hidden').value = sessionName;
+            document.getElementById('pairing-phone-number').value = '';
             document.getElementById('pairing-modal').style.display = 'flex';
         }
 
@@ -2312,16 +2341,47 @@
             
             phoneNumber = phoneNumber.replace(/\D/g, '');
 
+            // Lógica para adicionar DDD 55 se o usuário esquecer (Brasil)
+            // Telefones BR: 10 dígitos (Fixo: 11 + 8) ou 11 dígitos (Celular: 11 + 9)
+            if (phoneNumber.length === 10 || phoneNumber.length === 11) {
+                phoneNumber = '55' + phoneNumber;
+            }
+
             if (phoneNumber.length < 10) {
                 showFeedback(false, 'Número inválido. Digite com DDD.');
                 return;
+            }
+            
+            // Fecha o modal imediatamente
+            document.getElementById('pairing-modal').style.display = 'none';
+
+            // Adiciona feedback visual no card do bot
+            const card = document.getElementById(`bot-${sessionName}`);
+            if(card) {
+                const body = card.querySelector('.card-body');
+                // Remove área de QR existente se houver
+                const existingQr = card.querySelector('.qr-area');
+                if(existingQr) existingQr.remove();
+                
+                // Cria o loader
+                const loader = document.createElement('div');
+                loader.className = 'qr-area';
+                loader.id = `loader-${sessionName}`;
+                loader.innerHTML = `
+                    <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary); margin-bottom:10px;"></i>
+                    <p>Gerando Código de Pareamento...</p>
+                    <small style="color:var(--text-muted);">Isso pode levar alguns segundos.</small>
+                `;
+                
+                // Insere antes dos logs
+                const ref = card.querySelector('.logs-container');
+                body.insertBefore(loader, ref);
             }
             
             socket.emit('stop-bot', { sessionName });
             
             setTimeout(() => {
                 socket.emit('start-bot', { sessionName, phoneNumber });
-                document.getElementById('pairing-modal').style.display = 'none';
                 showFeedback(true, 'Solicitando código de pareamento...');
             }, 1000);
         };
@@ -2352,7 +2412,6 @@
             document.getElementById('edit-prompt').value=bot.prompt;
             document.getElementById('edit-botTypeGroup').checked = bot.botType === 'group';
             
-            document.getElementById('edit-botName').value = bot.botName || '';
             document.getElementById('edit-silenceTime').value = bot.silenceTime || 0;
             document.getElementById('edit-notificationNumber').value = bot.notificationNumber || '';
 
@@ -2378,7 +2437,7 @@
                 sessionName: document.getElementById('edit-sessionName-hidden').value, 
                 newPrompt: document.getElementById('edit-prompt').value,
                 botType: document.getElementById('edit-botTypeGroup').checked ? 'group' : 'individual',
-                botName: document.getElementById('edit-botName').value,
+                botName: '',
                 silenceTime: document.getElementById('edit-silenceTime').value,
                 notificationNumber: document.getElementById('edit-notificationNumber').value
             }); 
@@ -2464,6 +2523,28 @@
             const btn = document.getElementById('create-bot-btn');
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
             
+            // Fecha o modal imediatamente para evitar o "vácuo"
+            closeCreateModal();
+
+            // Adiciona um card temporário de carregamento na grid
+            const grid = document.getElementById('bots-grid');
+            const tempCard = document.createElement('div');
+            tempCard.id = 'temp-bot-loading';
+            tempCard.className = 'bot-card';
+            tempCard.innerHTML = `
+                <div class="card-body" style="align-items:center; justify-content:center; text-align:center; min-height:200px;">
+                    <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary); margin-bottom:15px;"></i>
+                    <h4>Criando Robô...</h4>
+                    <p style="color:var(--text-muted);">Aguarde, configurando ambiente.</p>
+                </div>
+            `;
+            
+            // Remove o empty state se existir
+            const empty = document.querySelector('.empty-state');
+            if(empty) empty.remove();
+
+            grid.prepend(tempCard);
+
             socket.emit('create-bot', { 
                 sessionName:n, 
                 prompt: botType === 'group' ? '' : pInput.value.trim(), 
