@@ -1,4 +1,3 @@
-
 const {
     default: makeWASocket,
     useMultiFileAuthState,
@@ -40,6 +39,9 @@ class SimpleCache {
     }
 }
 const msgRetryCounterCache = new SimpleCache();
+
+// Cache para evitar processamento duplo de tokens de ativação
+const processedActivations = new Set();
 
 // =================================================================================
 // CONFIGURAÇÃO E ARGUMENTOS
@@ -172,7 +174,10 @@ socket.on('ignored-list-updated', (data) => {
 socket.on('group-activation-result', async (data) => {
     if (data.botSessionName === nomeSessao && data.groupId) {
         if (!currentSock) return;
-        const msg = data.success ? '✅ Grupo ativado!' : `❌ Falha: ${data.message}`;
+        if (!currentSock) return;
+const msg = data.success 
+    ? '✅ Grupo ativado e vinculado a este bot!\n\nPara saber comandos deste grupo, envie !menu' 
+    : `❌ Falha: ${data.message}`;
         await currentSock.sendMessage(data.groupId, { text: msg });
         if(data.success) {
             // Inicializa com padrões se não vier do servidor
@@ -268,7 +273,7 @@ async function processarComGemini(jid, input, isAudio = false, promptEspecifico 
 
             const chatHistory = [
                 { role: "user", parts: [{ text: `System Instruction:\n${promptFinal}` }] },
-                { role: "model", parts: [{ text: "Entendido." }] },
+                { role: "model", parts: [{ text: "Entendido.." }] },
                 ...historicoConversa[jid]
             ];
 
@@ -524,6 +529,11 @@ if (platform === 'telegram') {
         if (isGroup && texto.includes('/ativar?token=')) {
             const token = texto.match(/token=([a-zA-Z0-9-]+)/)?.[1];
             if (token) {
+                // --- CORREÇÃO: Evitar processamento duplo ---
+                if (processedActivations.has(token)) return;
+                processedActivations.add(token);
+                setTimeout(() => processedActivations.delete(token), 60000); // Limpa após 1 min
+
                 console.log(`[${nomeSessao}] Link de ativação detectado no grupo Telegram ${chatId}`);
                 const groupTitle = ctx.chat.title || 'Grupo Telegram';
                 socket.emit('group-activation-request', { groupId: chatId, groupName: groupTitle, activationToken: token, botSessionName: nomeSessao });
@@ -900,7 +910,16 @@ if (platform === 'telegram') {
             if (isGroup && texto.includes('/ativar?token=')) {
                 const token = texto.match(/token=([a-zA-Z0-9-]+)/)?.[1];
                 if (token) {
+                    // --- CORREÇÃO: Evitar processamento duplo ---
+                    if (processedActivations.has(token)) return;
+                    processedActivations.add(token);
+                    setTimeout(() => processedActivations.delete(token), 60000); // Limpa após 1 min
+
                     console.log(`[${nomeSessao}] Link de ativação detectado no grupo ${jid}`);
+                    
+                    // Reage com ampulheta para indicar processamento
+                    await sock.sendMessage(jid, { react: { text: "⏳", key: msg.key } });
+                    
                     const meta = await sock.groupMetadata(jid);
                     socket.emit('group-activation-request', { groupId: jid, groupName: meta.subject, activationToken: token, botSessionName: nomeSessao });
                     return; 
@@ -1170,3 +1189,5 @@ if (platform === 'telegram') {
 
 process.on('uncaughtException', (err) => { console.error('Exceção não tratada:', err); });
 process.on('unhandledRejection', (reason, promise) => { console.error('Rejeição não tratada:', reason); });
+
+
