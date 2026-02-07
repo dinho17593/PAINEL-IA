@@ -6,9 +6,7 @@ const {
     delay,
     downloadMediaMessage,
     makeCacheableSignalKeyStore,
-    jidNormalizedUser,
-    makeInMemoryStore,
-    WAMessageStubType
+    jidNormalizedUser
 } = require('@whiskeysockets/baileys');
 const { Telegraf } = require('telegraf');
 const pino = require('pino');
@@ -16,7 +14,6 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 const fs = require('fs');
 const io = require('socket.io-client');
 const axios = require('axios');
-const qrcode = require('qrcode');
 
 // =================================================================================
 // CLASSE AUXILIAR DE CACHE
@@ -39,9 +36,6 @@ class SimpleCache {
     }
 }
 const msgRetryCounterCache = new SimpleCache();
-
-// Cache para evitar processamento duplo de tokens de ativação
-const processedActivations = new Set();
 
 // =================================================================================
 // CONFIGURAÇÃO E ARGUMENTOS
@@ -71,79 +65,12 @@ const modeloGemini = 'gemini-flash-latest';
 // =================================================================================
 
 const socket = io('http://localhost:3000');
-let currentSock = null; // Referência global para o socket do WhatsApp
 
 socket.on('connect', () => {
     console.log(`[${nomeSessao}] Conectado ao servidor via Socket.IO.`);
 });
 socket.on('disconnect', () => {
     console.log(`[${nomeSessao}] Desconectado do servidor.`);
-});
-
-// --- LISTENERS GLOBAIS ---
-
-socket.on('bot:send-client-message', async (data) => {
-    if (data.targetBot === nomeSessao) {
-        if (!currentSock) {
-            const errorMsg = `[${nomeSessao}] ERRO: Campanha ${data.campaignId} falhou. Bot não está conectado ao WhatsApp.`;
-            console.error(errorMsg);
-            socket.emit('campaign:feedback', { success: false, message: `Falha ao enviar: O robô ${nomeSessao} não está conectado.` });
-            return;
-        }
-        try {
-            const jid = `${data.clientNumber}@s.whatsapp.net`;
-            await currentSock.sendMessage(jid, { text: data.message });
-            console.log(`[${nomeSessao}] Mensagem da campanha ${data.campaignId} enviada para ${jid}`);
-        } catch (e) {
-            const errorMsg = `[${nomeSessao}] FALHA CRÍTICA ao enviar campanha para ${data.clientNumber}: ${e.message}`;
-            console.error(errorMsg);
-            socket.emit('campaign:feedback', { success: false, message: `Robô ${nomeSessao} falhou ao enviar para ${data.clientNumber}.` });
-        }
-    }
-});
-
-socket.on('bot:send-campaign-with-pix', async (data) => {
-    if (data.targetBot === nomeSessao) {
-        if (!currentSock) {
-            console.error(`[${nomeSessao}] ERRO: Bot desconectado ao tentar enviar PIX.`);
-            return;
-        }
-        try {
-            const jid = `${data.clientNumber}@s.whatsapp.net`;
-            const qrBuffer = Buffer.from(data.pixData.qr_code_base64, 'base64');
-            await currentSock.sendMessage(jid, { image: qrBuffer, caption: data.message });
-            await currentSock.sendMessage(jid, { text: data.pixData.qr_code });
-            console.log(`[${nomeSessao}] Campanha com PIX enviada para ${jid}`);
-        } catch (e) {
-            console.error(`[${nomeSessao}] Erro ao enviar campanha com PIX para ${data.clientNumber}:`, e);
-            socket.emit('campaign:feedback', { success: false, message: `Erro ao enviar PIX para ${data.clientNumber}.` });
-        }
-    }
-});
-
-socket.on('pix:generated-for-client', async (data) => {
-    if (data.botSessionName === nomeSessao) {
-        try {
-            if (!currentSock) return;
-            const { pixData, clientJid } = data;
-            const qrBuffer = Buffer.from(pixData.qr_code_base64, 'base64');
-            await currentSock.sendMessage(clientJid, { image: qrBuffer, caption: `✅ PIX Gerado! Você também pode usar o Copia e Cola abaixo:` });
-            await currentSock.sendMessage(clientJid, { text: pixData.qr_code });
-        } catch (e) {
-            console.error(`[${nomeSessao}] Erro ao enviar PIX para ${data.clientJid}:`, e);
-        }
-    }
-});
-
-socket.on('pix:generation-failed', async (data) => {
-    if (data.botSessionName === nomeSessao) {
-        try {
-            if (!currentSock) return;
-            await currentSock.sendMessage(data.clientJid, { text: `❌ Não foi possível gerar o Pix. Motivo: ${data.message || 'Erro desconhecido.'}` });
-        } catch (e) {
-            console.error(`[${nomeSessao}] Erro ao enviar mensagem de falha PIX:`, e);
-        }
-    }
 });
 
 socket.on('group-settings-changed', (data) => {
@@ -157,6 +84,7 @@ socket.on('group-settings-changed', (data) => {
     }
 });
 
+// ESCUTA PARA REMOÇÃO IMEDIATA DO GRUPO DA MEMÓRIA
 socket.on('group-removed', (data) => {
     if (data.botSessionName === nomeSessao && data.groupId) {
         console.log(`[${nomeSessao}] ⚠️ ALERTA: Grupo ${data.groupId} removido do painel. Parando respostas imediatamente.`);
@@ -171,32 +99,8 @@ socket.on('ignored-list-updated', (data) => {
     }
 });
 
-socket.on('group-activation-result', async (data) => {
-    if (data.botSessionName === nomeSessao && data.groupId) {
-        if (!currentSock) return;
-        if (!currentSock) return;
-const msg = data.success 
-    ? '✅ Grupo ativado e vinculado a este bot!\n\nPara saber comandos deste grupo, envie !menu' 
-    : `❌ Falha: ${data.message}`;
-        await currentSock.sendMessage(data.groupId, { text: msg });
-        if(data.success) {
-            // Inicializa com padrões se não vier do servidor
-            authorizedGroups[data.groupId] = { 
-                expiresAt: new Date(data.expiresAt), 
-                antiLink: false, 
-                prompt: '', 
-                silenceTime: 0, 
-                botName: '', 
-                isPaused: false,
-                welcomeEnabled: false,
-                welcomeMessage: '👋 Olá @user! Bem-vindo(a) ao grupo!'
-            };
-        }
-    }
-});
-
 // =================================================================================
-// VARIÁVEIS DE ESTADO
+// VARIÁVEIS DE ESTADO E AUXILIARES
 // =================================================================================
 
 const pausados = {};
@@ -216,13 +120,20 @@ try {
             silenceTime: group.silenceTime !== undefined ? parseInt(group.silenceTime) : 0,
             botName: group.botName || '',
             isPaused: group.isPaused === true,
-            // Configurações de Boas Vindas
-            welcomeEnabled: group.welcomeEnabled === true,
-            welcomeMessage: group.welcomeMessage || '👋 Olá @user! Bem-vindo(a) ao grupo!'
+            welcomeMessage: group.welcomeMessage || null 
         };
     });
 } catch (e) {
     console.error('❌ Erro ao ler grupos:', e);
+}
+
+// Helper para formatar mensagem de boas-vindas
+function formatWelcomeMessage(template, userName, groupName) {
+    if (!template) return '';
+    return template
+        .replace(/#nome/gi, userName)
+        .replace(/#user/gi, userName)
+        .replace(/#grupo/gi, groupName);
 }
 
 // =================================================================================
@@ -250,7 +161,7 @@ const safetySettings = [
 let genAI = new GoogleGenerativeAI(API_KEYS[currentApiKeyIndex]);
 let model = genAI.getGenerativeModel({ model: modeloGemini, safetySettings });
 
-const logger = pino({ level: 'silent' }); 
+const logger = pino({ level: 'silent' }); // Mantido silent para privacidade no debug
 
 const historicoConversa = {};
 const MAX_HISTORICO_POR_USUARIO = 20;
@@ -263,7 +174,8 @@ function switchToNextApiKey() {
 }
 
 async function processarComGemini(jid, input, isAudio = false, promptEspecifico = null) {
-    console.log(`[DEBUG IA] Iniciando processamento para ${jid}. Input: "${input.substring(0, 20)}..."`);
+    // PRIVACIDADE: Não logar o conteúdo da mensagem
+    console.log(`[DEBUG IA] Iniciando processamento para ${jid}.`);
     
     for (let attempt = 0; attempt < API_KEYS.length; attempt++) {
         try {
@@ -273,7 +185,7 @@ async function processarComGemini(jid, input, isAudio = false, promptEspecifico 
 
             const chatHistory = [
                 { role: "user", parts: [{ text: `System Instruction:\n${promptFinal}` }] },
-                { role: "model", parts: [{ text: "Entendido.." }] },
+                { role: "model", parts: [{ text: "Entendido." }] },
                 ...historicoConversa[jid]
             ];
 
@@ -288,16 +200,25 @@ async function processarComGemini(jid, input, isAudio = false, promptEspecifico 
                 historicoConversa[jid].push({ role: "user", parts: [{ text: "[Áudio]" }] });
             } else {
                 const chat = model.startChat({ history: chatHistory });
+                
                 const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Gemini")), 15000));
                 const apiPromise = chat.sendMessage(input);
+                
                 const result = await Promise.race([apiPromise, timeoutPromise]);
                 
-                if (!result || !result.response) throw new Error("Resposta vazia");
-                resposta = result.response.text().trim();
+                if (!result || !result.response) {
+                    throw new Error("Resposta da API veio vazia ou nula.");
+                }
+                
+                resposta = result.response.text();
+                if (!resposta) resposta = ""; 
+                resposta = resposta.trim();
+                
                 historicoConversa[jid].push({ role: "user", parts: [{ text: input }] });
             }
 
-            console.log(`[DEBUG IA] Resposta gerada: "${resposta.substring(0, 20)}..."`);
+            console.log(`[DEBUG IA] Resposta gerada com sucesso para ${jid}.`);
+
             historicoConversa[jid].push({ role: "model", parts: [{ text: resposta }] });
             if (historicoConversa[jid].length > MAX_HISTORICO_POR_USUARIO) historicoConversa[jid] = historicoConversa[jid].slice(-MAX_HISTORICO_POR_USUARIO);
             
@@ -306,6 +227,7 @@ async function processarComGemini(jid, input, isAudio = false, promptEspecifico 
         } catch (err) {
             const errorMsg = err.toString();
             console.error(`[DEBUG IA] Erro na tentativa ${attempt}:`, errorMsg);
+            
             if (errorMsg.includes('429') || errorMsg.includes('fetch failed') || errorMsg.includes('Timeout')) {
                 switchToNextApiKey();
             } else {
@@ -317,7 +239,7 @@ async function processarComGemini(jid, input, isAudio = false, promptEspecifico 
 }
 
 // =================================================================================
-// FUNÇÕES AUXILIARES
+// FUNÇÕES AUXILIARES (ADMINISTRAÇÃO)
 // =================================================================================
 
 function areJidsSameUser(jid1, jid2) {
@@ -367,6 +289,7 @@ if (platform === 'telegram') {
     
     (async () => {
         try {
+            // Registrar comandos no Telegram
             const commands = [
                 { command: 'id', description: 'Mostrar ID do Chat' },
                 { command: 'menu', description: 'Mostrar todos os comandos' },
@@ -377,9 +300,6 @@ if (platform === 'telegram') {
 
             if (botType === 'group') {
                 commands.push(
-                    { command: 'config', description: 'Ver configurações do grupo' },
-                    { command: 'boasvindas', description: 'Ligar/Desligar boas vindas' },
-                    { command: 'msgboasvindas', description: 'Definir mensagem de boas vindas' },
                     { command: 'ban', description: 'Banir usuário' },
                     { command: 'kick', description: 'Expulsar usuário' },
                     { command: 'mute', description: 'Mutar usuário' },
@@ -387,6 +307,7 @@ if (platform === 'telegram') {
                     { command: 'promover', description: 'Promover a Admin' },
                     { command: 'rebaixar', description: 'Remover Admin' },
                     { command: 'antilink', description: 'Configurar Anti-Link' },
+                    { command: 'boasvindas', description: 'Configurar mensagem de entrada' },
                     { command: 'todos', description: 'Chamar todos' },
                     { command: 'apagar', description: 'Apagar mensagem respondida' },
                     { command: 'fixar', description: 'Fixar mensagem' },
@@ -407,6 +328,7 @@ if (platform === 'telegram') {
         } catch (err) { console.error('Erro Telegram:', err); process.exit(1); }
     })();
 
+    // Listener para confirmação de ativação de grupo (Telegram)
     socket.off('group-activation-result');
     socket.on('group-activation-result', async (data) => {
         if (data.botSessionName === nomeSessao && data.groupId) {
@@ -421,11 +343,48 @@ if (platform === 'telegram') {
                         silenceTime: 0, 
                         botName: '', 
                         isPaused: false,
-                        welcomeEnabled: false,
-                        welcomeMessage: '👋 Olá @user! Bem-vindo(a) ao grupo!'
+                        welcomeMessage: null
                     };
                 }
             } catch (e) { console.error('Erro ao enviar msg Telegram:', e); }
+        }
+    });
+
+    // =================================================================================
+    // 👋 BOAS-VINDAS NO TELEGRAM
+    // =================================================================================
+    bot.on('new_chat_members', async (ctx) => {
+        try {
+            const chatId = ctx.chat.id.toString();
+            // Verificação de autorização (se for bot de grupo)
+            if (botType === 'group') {
+                if (!authorizedGroups[chatId]) return;
+                if (authorizedGroups[chatId].expiresAt && new Date() > authorizedGroups[chatId].expiresAt) return;
+                if (authorizedGroups[chatId].isPaused) return;
+            }
+
+            // Verificar configuração de mensagem personalizada
+            const customWelcome = authorizedGroups[chatId]?.welcomeMessage;
+            if (customWelcome === 'off') return; // Desativado pelo admin
+
+            const newMembers = ctx.message.new_chat_members;
+            const groupName = ctx.chat.title || 'Grupo';
+
+            for (const member of newMembers) {
+                if (member.is_bot) continue; 
+                const name = member.first_name || 'Novo Membro';
+                
+                let textToSend = '';
+                if (customWelcome) {
+                    textToSend = formatWelcomeMessage(customWelcome, name, groupName);
+                } else {
+                    textToSend = `👋 Olá, *${name}*! Seja bem-vindo(a) ao *${groupName}*!`;
+                }
+                
+                await ctx.reply(textToSend, { parse_mode: 'Markdown' });
+            }
+        } catch (e) {
+            console.error(`[${nomeSessao}] Erro ao enviar boas-vindas no Telegram:`, e);
         }
     });
     
@@ -433,41 +392,7 @@ if (platform === 'telegram') {
         ctx.reply(`ID deste chat: \`${ctx.chat.id}\``, { parse_mode: 'Markdown' });
     });
 
-    // --- BOAS VINDAS TELEGRAM ---
-    bot.on('new_chat_members', async (ctx) => {
-        const chatId = ctx.chat.id.toString();
-        
-        if (botType === 'group') {
-            if (!authorizedGroups[chatId]) return;
-            if (authorizedGroups[chatId].expiresAt && new Date() > authorizedGroups[chatId].expiresAt) return;
-            if (authorizedGroups[chatId].isPaused) return;
-            
-            // Verifica se boas vindas está ativado
-            if (!authorizedGroups[chatId].welcomeEnabled) return;
-        }
-
-        const newMembers = ctx.message.new_chat_members;
-        const welcomeTemplate = authorizedGroups[chatId]?.welcomeMessage || '👋 Olá @user! Bem-vindo(a) ao grupo!';
-
-        for (const member of newMembers) {
-            if (member.is_bot) continue; 
-            const name = member.first_name || 'Novo Membro';
-            // Substitui @user pelo nome
-            const finalMsg = welcomeTemplate.replace(/@user/g, `*${name}*`);
-            
-            try {
-                await ctx.reply(finalMsg, { parse_mode: 'Markdown' });
-            } catch (e) {
-                console.error(`[${nomeSessao}] Erro ao enviar boas vindas Telegram:`, e);
-            }
-        }
-    });
-
     bot.on('message', async (ctx) => {
-        // --- ANTI-BOT LOOP PROTECTION (TELEGRAM) ---
-        // Se a mensagem vier de um bot, ignoramos imediatamente.
-        if (ctx.from && ctx.from.is_bot) return;
-
         const texto = ctx.message.text || ctx.message.caption || '';
         if(!texto && !ctx.message.voice && !ctx.message.audio) return;
 
@@ -529,14 +454,14 @@ if (platform === 'telegram') {
         if (isGroup && texto.includes('/ativar?token=')) {
             const token = texto.match(/token=([a-zA-Z0-9-]+)/)?.[1];
             if (token) {
-                // --- CORREÇÃO: Evitar processamento duplo ---
-                if (processedActivations.has(token)) return;
-                processedActivations.add(token);
-                setTimeout(() => processedActivations.delete(token), 60000); // Limpa após 1 min
-
                 console.log(`[${nomeSessao}] Link de ativação detectado no grupo Telegram ${chatId}`);
                 const groupTitle = ctx.chat.title || 'Grupo Telegram';
-                socket.emit('group-activation-request', { groupId: chatId, groupName: groupTitle, activationToken: token, botSessionName: nomeSessao });
+                socket.emit('group-activation-request', { 
+                    groupId: chatId, 
+                    groupName: groupTitle, 
+                    activationToken: token, 
+                    botSessionName: nomeSessao 
+                });
                 return; 
             }
         }
@@ -552,14 +477,16 @@ if (platform === 'telegram') {
             return;
         }
 
-        // 3. Lógica de Administração
+        // 3. Lógica de Administração (Anti-Link e Comandos)
         if (isGroup && botType === 'group') {
+            // --- ANTI-LINK ---
             if (groupConfig && groupConfig.antiLink) {
                 const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(t\.me\/[^\s]+)/gi;
                 if (linkRegex.test(texto)) {
                     try {
                         const member = await ctx.getChatMember(userId);
                         const senderIsAdm = member.status === 'administrator' || member.status === 'creator';
+                        
                         if (!senderIsAdm) {
                             await ctx.deleteMessage();
                             await ctx.kickChatMember(userId);
@@ -570,16 +497,22 @@ if (platform === 'telegram') {
                 }
             }
 
+            // --- COMANDOS ADMIN ---
             if (texto.startsWith('!') || texto.startsWith('/') || texto.startsWith('.')) {
                 const args = texto.trim().split(/ +/);
                 let rawCmd = args.shift().toLowerCase();
-                if (rawCmd.startsWith('/') || rawCmd.startsWith('!') || rawCmd.startsWith('.')) rawCmd = rawCmd.substring(1);
+                
+                if (rawCmd.startsWith('/') || rawCmd.startsWith('!') || rawCmd.startsWith('.')) {
+                    rawCmd = rawCmd.substring(1);
+                }
+                
                 const comando = rawCmd.split('@')[0];
 
                 try {
                     const member = await ctx.getChatMember(userId);
                     const senderIsAdm = member.status === 'administrator' || member.status === 'creator';
 
+                    // Comandos Públicos
                     if (comando === 'ping') {
                         const start = Date.now();
                         const msg = await ctx.reply('🏓 Pong!');
@@ -590,23 +523,29 @@ if (platform === 'telegram') {
 
                     if (comando === 'menu' || comando === 'ajuda') {
                         let menu = `🤖 *MENU DE COMANDOS*\n\n`;
-                        menu += `👤 *Comandos Públicos:*\n`;
+                        menu += `👤 *Públicos:*\n`;
                         menu += `/menu - Exibe esta lista detalhada de comandos.\n`;
                         menu += `/ping - Verifica se o bot está online e a latência.\n`;
                         menu += `/stop - Pausa o bot por 10 minutos (interrompe respostas da IA).\n`;
                         menu += `/stopsempre - Faz o bot ignorar você ou o usuário respondido permanentemente.\n`;
+                        menu += `/id - Ver ID do chat.\n`;
 
                         if (senderIsAdm) {
                             menu += `\n👮 *Administração (Apenas Admins):*\n`;
-                            menu += `/config - Ver configurações atuais.\n`;
-                            menu += `/boasvindas <on/off> - Ativa/Desativa boas vindas.\n`;
-                            menu += `/msgboasvindas <texto> - Define msg (use @user).\n`;
                             menu += `/ban (responda) - Bane o usuário da mensagem respondida.\n`;
                             menu += `/kick (responda) - Remove (expulsa) o usuário.\n`;
-                            menu += `/apagar (responda) - Apaga a mensagem respondida (se o bot for admin).\n`;
+                            menu += `/mute (responda) - Impede o usuário de enviar mensagens.\n`;
+                            menu += `/unmute (responda) - Permite que o usuário fale novamente.\n`;
+                            menu += `/promover (responda) - Torna o usuário administrador.\n`;
+                            menu += `/rebaixar (responda) - Remove o admin do usuário.\n`;
+                            menu += `/boasvindas <texto> - Configura mensagem (use #nome, #grupo) ou 'off'.\n`;
+                            menu += `/apagar (responda) - Apaga a mensagem respondida e o comando.\n`;
                             menu += `/fixar (responda) - Fixa a mensagem no topo do grupo.\n`;
                             menu += `/desfixar - Desfixa a mensagem.\n`;
                             menu += `/todos - Marca todos os membros do grupo.\n`;
+                            menu += `/titulo <nome> - Altera o título do grupo.\n`;
+                            menu += `/descricao <texto> - Altera a descrição do grupo.\n`;
+                            menu += `/link - Gera/Exibe o link de convite do grupo.\n`;
                             menu += `/antilink <on/off> - Ativa ou desativa a remoção automática de links.\n`;
                             menu += `/reset - Limpa a memória de conversa da IA neste chat.\n`;
                         }
@@ -614,43 +553,117 @@ if (platform === 'telegram') {
                         return;
                     }
 
+                    // Comandos de Admin
                     if (senderIsAdm) {
-                         const replyTo = ctx.message.reply_to_message;
-                         const targetUser = replyTo ? replyTo.from : null;
-                         switch (comando) {
-                            case 'config':
-                                let cfg = `⚙️ *Configurações do Grupo*\n\n`;
-                                cfg += `🛡️ Anti-Link: *${authorizedGroups[chatId].antiLink ? 'ON' : 'OFF'}*\n`;
-                                cfg += `👋 Boas Vindas: *${authorizedGroups[chatId].welcomeEnabled ? 'ON' : 'OFF'}*\n`;
-                                cfg += `📝 Msg Boas Vindas: _${authorizedGroups[chatId].welcomeMessage || 'Padrão'}_\n`;
-                                cfg += `🔇 Tempo Silêncio: ${authorizedGroups[chatId].silenceTime} min\n`;
-                                await ctx.reply(cfg, { parse_mode: 'Markdown' });
+                        const replyTo = ctx.message.reply_to_message;
+                        const targetUser = replyTo ? replyTo.from : null;
+
+                        switch (comando) {
+                            case 'ban':
+                            case 'banir':
+                                if (!targetUser) return ctx.reply('❌ Responda a mensagem de quem deseja banir.');
+                                await ctx.kickChatMember(targetUser.id);
+                                await ctx.reply('✅ Usuário banido.');
+                                return;
+
+                            case 'kick':
+                            case 'expulsar':
+                                if (!targetUser) return ctx.reply('❌ Responda a mensagem de quem deseja expulsar.');
+                                await ctx.unbanChatMember(targetUser.id); // Kick no telegram é ban + unban
+                                await ctx.reply('✅ Usuário expulso.');
+                                return;
+
+                            case 'mute':
+                            case 'mutar':
+                                if (!targetUser) return ctx.reply('❌ Responda a mensagem de quem deseja mutar.');
+                                await ctx.restrictChatMember(targetUser.id, { can_send_messages: false });
+                                await ctx.reply('✅ Usuário mutado.');
+                                return;
+
+                            case 'unmute':
+                            case 'desmutar':
+                                if (!targetUser) return ctx.reply('❌ Responda a mensagem de quem deseja desmutar.');
+                                await ctx.restrictChatMember(targetUser.id, { can_send_messages: true, can_send_media_messages: true, can_send_other_messages: true });
+                                await ctx.reply('✅ Usuário desmutado.');
+                                return;
+
+                            case 'promover':
+                            case 'admin':
+                                if (!targetUser) return ctx.reply('❌ Responda a mensagem de quem deseja promover.');
+                                await ctx.promoteChatMember(targetUser.id, { can_change_info: true, can_delete_messages: true, can_invite_users: true, can_restrict_members: true, can_pin_messages: true });
+                                await ctx.reply('✅ Usuário promovido a ADM.');
+                                return;
+
+                            case 'rebaixar':
+                                if (!targetUser) return ctx.reply('❌ Responda a mensagem de quem deseja rebaixar.');
+                                await ctx.promoteChatMember(targetUser.id, { can_change_info: false, can_delete_messages: false, can_invite_users: false, can_restrict_members: false, can_pin_messages: false });
+                                await ctx.reply('✅ ADM removido.');
+                                return;
+                            
+                            case 'todos':
+                            case 'everyone':
+                                await ctx.reply('📢 *Atenção todos!*', { parse_mode: 'Markdown' });
+                                return;
+
+                            case 'apagar':
+                            case 'del':
+                                if (!replyTo) return ctx.reply('❌ Responda a mensagem que deseja apagar.');
+                                await ctx.deleteMessage(replyTo.message_id);
+                                await ctx.deleteMessage(); // Apaga o comando também
+                                return;
+
+                            case 'fixar':
+                            case 'pin':
+                                if (!replyTo) return ctx.reply('❌ Responda a mensagem que deseja fixar.');
+                                await ctx.pinChatMessage(replyTo.message_id);
+                                return;
+
+                            case 'desfixar':
+                            case 'unpin':
+                                await ctx.unpinChatMessage();
+                                await ctx.reply('✅ Mensagem desfixada.');
+                                return;
+
+                            case 'titulo':
+                                if (!args.length) return ctx.reply('❌ Digite o novo título.');
+                                await ctx.setChatTitle(args.join(' '));
+                                await ctx.reply('✅ Título alterado.');
+                                return;
+
+                            case 'descricao':
+                                if (!args.length) return ctx.reply('❌ Digite a nova descrição.');
+                                await ctx.setChatDescription(args.join(' '));
+                                await ctx.reply('✅ Descrição alterada.');
+                                return;
+
+                            case 'link':
+                                const invite = await ctx.exportChatInviteLink();
+                                await ctx.reply(`🔗 Link do grupo: ${invite}`);
+                                return;
+
+                            case 'reset':
+                                historicoConversa[chatId] = [];
+                                await ctx.reply('🧠 Memória da IA reiniciada para este grupo.');
+                                return;
+
+                            case 'antilink':
+                                if (!args[0]) return ctx.reply('Use: /antilink on ou /antilink off');
+                                const novoEstado = args[0].toLowerCase() === 'on';
+                                authorizedGroups[chatId].antiLink = novoEstado;
+                                socket.emit('update-group-settings', { groupId: chatId, settings: { antiLink: novoEstado } });
+                                await ctx.reply(`🛡️ Anti-Link agora está: *${novoEstado ? 'LIGADO' : 'DESLIGADO'}*`, { parse_mode: 'Markdown' });
                                 return;
 
                             case 'boasvindas':
-                                if(!args[0]) return ctx.reply('Use: /boasvindas on ou off');
-                                authorizedGroups[chatId].welcomeEnabled = (args[0].toLowerCase() === 'on');
-                                socket.emit('update-group-settings', {groupId:chatId, settings:{welcomeEnabled: authorizedGroups[chatId].welcomeEnabled}});
-                                await ctx.reply(`👋 Boas Vindas: *${args[0].toUpperCase()}*`, { parse_mode: 'Markdown' });
-                                return;
-
-                            case 'msgboasvindas':
-                                if(!args.length) return ctx.reply('Digite a mensagem. Use @user para marcar.');
+                                if (!args.length) return ctx.reply('❌ Digite a mensagem ou "off". Ex: /boasvindas Olá #nome!');
                                 const novaMsg = args.join(' ');
-                                authorizedGroups[chatId].welcomeMessage = novaMsg;
-                                socket.emit('update-group-settings', {groupId:chatId, settings:{welcomeMessage: novaMsg}});
-                                await ctx.reply(`✅ Mensagem de boas vindas atualizada!`);
+                                const valueToSave = novaMsg.toLowerCase() === 'off' ? 'off' : novaMsg;
+                                authorizedGroups[chatId].welcomeMessage = valueToSave;
+                                socket.emit('update-group-settings', { groupId: chatId, settings: { welcomeMessage: valueToSave } });
+                                if (valueToSave === 'off') await ctx.reply('🔕 Mensagem de boas-vindas desativada.');
+                                else await ctx.reply('✅ Mensagem de boas-vindas configurada.');
                                 return;
-
-                            case 'ban': if (!targetUser) return ctx.reply('❌ Responda msg.'); await ctx.kickChatMember(targetUser.id); await ctx.reply('✅ Banido.'); return;
-                            case 'kick': if (!targetUser) return ctx.reply('❌ Responda msg.'); await ctx.unbanChatMember(targetUser.id); await ctx.reply('✅ Expulso.'); return;
-                            case 'apagar': if (!replyTo) return ctx.reply('❌ Responda msg.'); await ctx.deleteMessage(replyTo.message_id); await ctx.deleteMessage(); return;
-                            case 'fixar': if (!replyTo) return ctx.reply('❌ Responda msg.'); await ctx.pinChatMessage(replyTo.message_id); return;
-                            case 'desfixar': await ctx.unpinChatMessage(); await ctx.reply('✅ Desfixada.'); return;
-                            case 'todos': await ctx.reply('📢 *Atenção todos!*', { parse_mode: 'Markdown' }); return;
-                            case 'antilink': if(!args[0]) return ctx.reply('Use: /antilink on/off'); authorizedGroups[chatId].antiLink = (args[0]=='on'); socket.emit('update-group-settings', {groupId:chatId, settings:{antiLink:authorizedGroups[chatId].antiLink}}); await ctx.reply(`AntiLink: ${args[0]}`); return;
-                            case 'reset': historicoConversa[chatId]=[]; await ctx.reply('🧠 Memória reiniciada.'); return;
-                         }
+                        }
                     }
                 } catch (e) { console.error('Erro comando telegram:', e); }
             }
@@ -716,20 +729,32 @@ if (platform === 'telegram') {
         const sock = makeWASocket({
             version, 
             logger, 
+            printQRInTerminal: !phoneNumberArg,
             auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
             syncFullHistory: false, 
             markOnlineOnConnect: true,
             generateHighQualityLinkPreview: true, 
-            browser: ["Ubuntu", "Chrome", "20.0.04"],
-            msgRetryCounterCache,
-            connectTimeoutMs: 60000,
-            keepAliveIntervalMs: 10000,
-            retryRequestDelayMs: 250,
-            emitOwnEvents: true,
-            fireInitQueries: false
+            browser: ["Ubuntu", "Chrome", "20.0.04"]
         });
 
-        currentSock = sock; // Atualiza a referência global
+        socket.off('group-activation-result');
+        socket.on('group-activation-result', async (data) => {
+            if (data.botSessionName === nomeSessao && data.groupId) {
+                const msg = data.success ? '✅ Grupo ativado!' : `❌ Falha: ${data.message}`;
+                await sock.sendMessage(data.groupId, { text: msg });
+                if(data.success) {
+                    authorizedGroups[data.groupId] = { 
+                        expiresAt: new Date(data.expiresAt), 
+                        antiLink: false, 
+                        prompt: '', 
+                        silenceTime: 0, 
+                        botName: '', 
+                        isPaused: false,
+                        welcomeMessage: null
+                    };
+                }
+            }
+        });
 
         if (phoneNumberArg && !sock.authState.creds.registered) {
             setTimeout(async () => {
@@ -744,64 +769,61 @@ if (platform === 'telegram') {
             const { connection, lastDisconnect, qr } = update;
             if (qr && !phoneNumberArg) console.log(`QR_CODE:${qr}`);
             if (connection === 'close') {
-                currentSock = null;
                 const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-                if (lastDisconnect?.error?.toString()?.includes('Bad MAC')) {
-                    console.log(`[${nomeSessao}] ⚠️ Erro crítico de sessão (Bad MAC). Tentando reconectar...`);
-                }
                 if (shouldReconnect) setTimeout(ligarBot, 5000);
                 else process.exit(0);
             }
             if (connection === 'open') {
                 console.log('\nONLINE!'); 
                 socket.emit('bot-online', { sessionName: nomeSessao });
-                try {
-                    const user = sock.user;
-                    if (user) {
-                        const name = user.name || user.id.split(':')[0];
-                        socket.emit('bot-identified', { sessionName: nomeSessao, publicName: name });
-                    }
-                } catch (e) {
-                    console.error('Erro ao enviar nome do bot:', e);
-                }
             }
         });
 
         sock.ev.on('creds.update', saveCreds);
 
-        // --- BOAS VINDAS WHATSAPP ---
-        sock.ev.on('group-participants.update', async (notification) => {
-            const { id, participants, action } = notification;
-            
-            // Apenas se for adição de membro
-            if (action === 'add') {
-                if (botType === 'group') {
-                    if (!authorizedGroups[id]) return;
-                    if (authorizedGroups[id].expiresAt && new Date() > authorizedGroups[id].expiresAt) return;
-                    if (authorizedGroups[id].isPaused) return;
-                    
-                    // Verifica se boas vindas está ativado
-                    if (!authorizedGroups[id].welcomeEnabled) return;
-                }
-
-                const welcomeTemplate = authorizedGroups[id]?.welcomeMessage || '👋 Olá @user! Bem-vindo(a) ao grupo!';
-
-                for (const participant of participants) {
-                    try {
-                        const myId = sock.user?.id || sock.authState.creds.me?.id;
-                        if (areJidsSameUser(participant, myId)) continue;
-
-                        // Substitui @user pela menção real
-                        const text = welcomeTemplate.replace(/@user/g, `@${participant.split('@')[0]}`);
-                        
-                        await sock.sendMessage(id, {
-                            text: text,
-                            mentions: [participant]
-                        });
-                    } catch (e) {
-                        console.error(`[${nomeSessao}] Erro ao enviar boas vindas WhatsApp:`, e);
+        // =================================================================================
+        // 👋 BOAS-VINDAS NO WHATSAPP
+        // =================================================================================
+        sock.ev.on('group-participants.update', async (update) => {
+            try {
+                const { id, participants, action } = update;
+                if (action === 'add') {
+                    // Verificação de autorização (se for bot de grupo)
+                    if (botType === 'group') {
+                        if (!authorizedGroups[id]) return;
+                        if (authorizedGroups[id].expiresAt && new Date() > authorizedGroups[id].expiresAt) return;
+                        if (authorizedGroups[id].isPaused) return;
                     }
+
+                    const customWelcome = authorizedGroups[id]?.welcomeMessage;
+                    if (customWelcome === 'off') return;
+
+                    // Tentar obter metadados do grupo para pegar o nome
+                    let groupName = "Grupo";
+                    try {
+                        const metadata = await sock.groupMetadata(id);
+                        groupName = metadata.subject;
+                    } catch (e) {
+                        console.error(`[${nomeSessao}] Falha ao obter nome do grupo para boas-vindas.`, e);
+                    }
+
+                    let text = '';
+                    if (customWelcome) {
+                         // Como participants é um array, vamos pegar o primeiro JID para o nome (caso seja 1 pessoa)
+                         // ou deixar genérico se forem vários, mas o mention funciona no WhatsApp.
+                         // O #nome será substituído mas a menção @user será feita pelo mentions array.
+                         text = formatWelcomeMessage(customWelcome, '', groupName); 
+                    } else {
+                        text = `👋 Olá! Seja bem-vindo(a) ao grupo *${groupName}*!`;
+                    }
+                    
+                    await sock.sendMessage(id, { 
+                        text: text, 
+                        mentions: participants 
+                    });
                 }
+            } catch (e) {
+                console.error(`[${nomeSessao}] Erro ao enviar boas-vindas no WhatsApp:`, e);
             }
         });
 
@@ -809,16 +831,6 @@ if (platform === 'telegram') {
             if (type !== 'notify') return;
             const msg = messages[0];
             if (!msg.message || msg.key.remoteJid === 'status@broadcast') return;
-
-            // --- TRAVA DE SEGURANÇA: NÃO LER PRÓPRIAS MENSAGENS ---
-            if (msg.key.fromMe) return;
-
-            // --- ANTI-BOT LOOP PROTECTION (PADRÃO DA INDÚSTRIA) ---
-            // Bots baseados em Baileys (maioria do mercado) geram IDs começando com BAE5.
-            // Se detectarmos isso, ignoramos a mensagem para evitar loop infinito.
-            if (msg.key.id && msg.key.id.startsWith('BAE5') && msg.key.id.length === 16) {
-                return;
-            }
 
             const jid = msg.key.remoteJid;
             const isGroup = jid.endsWith('@g.us');
@@ -828,28 +840,11 @@ if (platform === 'telegram') {
                         msg.message.imageMessage?.caption || msg.message.videoMessage?.caption || '';
             let isAudio = !!msg.message.audioMessage;
 
-            // --- LÓGICA DE COBRANÇA (PIX) ---
-            if (texto.trim().toUpperCase().startsWith('PAGAR-')) {
-                const campaignId = texto.trim().substring(6).trim();
-                
-                if (campaignId) {
-                    console.log(`[${nomeSessao}] Cliente ${jid} solicitou PIX para campanha ${campaignId}`);
-                    await sock.sendMessage(jid, { text: '⏳ Um momento, estou gerando seu código PIX...' });
-                    socket.emit('client:request-pix', {
-                        campaignId: campaignId,
-                        clientJid: jid,
-                        botSessionName: nomeSessao
-                    });
-                    return; 
-                }
-            }
-
-            // =========================================================================
-            // INTERCEPÇÃO DE COMANDOS
-            // =========================================================================
-            
+            // --- 1. COMANDO !stopsempre (Ignorar Permanente) ---
             if (texto.toLowerCase() === '!stopsempre') {
                 let valueToIgnore = null;
+                let typeToIgnore = 'number';
+
                 if (msg.key.fromMe) {
                     if (isGroup) {
                          const context = msg.message?.extendedTextMessage?.contextInfo;
@@ -880,10 +875,12 @@ if (platform === 'telegram') {
                         await sock.sendMessage(jid, { delete: key });
                     } catch (e) {}
                 }
-                return;
+                return; // Interrompe fluxo
             }
 
-            const stopMatch = texto.match(/^!stop(\d*)$/i);
+            // --- 2. COMANDO !stop (Pausa Temporária) ---
+            // CORREÇÃO AQUI: Regex mais flexível e deleção correta
+            const stopMatch = texto.trim().match(/^!stop\s*(\d*)$/i);
             if (stopMatch) {
                 let isAuth = false;
                 if (msg.key.fromMe) isAuth = true;
@@ -893,33 +890,37 @@ if (platform === 'telegram') {
                 if (isAuth) {
                     const minutos = stopMatch[1] ? parseInt(stopMatch[1]) : 10;
                     const duracaoMs = minutos * 60 * 1000;
+                    
+                    // 1. Aplica a pausa imediatamente
                     pausados[jid] = Date.now() + duracaoMs;
+                    console.log(`[${nomeSessao}] 🔇 Pausado por ${minutos} min em ${jid}.`);
 
-                    console.log(`[${nomeSessao}] 🔇 Pausado manualmente por ${minutos} min em ${jid}.`);
-
+                    // 2. Tenta reagir e deletar (Try/Catch para não travar se não for admin)
                     try {
-                        const key = { remoteJid: jid, fromMe: msg.key.fromMe, id: msg.key.id, participant: msg.key.participant };
-                        await sock.sendMessage(jid, { delete: key });
-                    } catch (e) {}
+                        await sock.sendMessage(jid, { react: { text: "🔇", key: msg.key } }); // Feedback visual
+                        await sock.sendMessage(jid, { delete: msg.key }); // Usa a chave original
+                    } catch (e) {
+                        // Se falhar ao deletar (ex: não é admin), a pausa já foi aplicada acima.
+                    }
                     return; 
                 }
             }
 
-            if (pausados[jid] && Date.now() < pausados[jid]) return;
+            // --- 3. AUTO-SILÊNCIO AO RESPONDER ---
+            if (msg.key.fromMe) {
+                if (silenceTimeMinutesGlobal > 0) {
+                    const autoSilenceMs = silenceTimeMinutesGlobal * 60 * 1000;
+                    pausados[jid] = Date.now() + autoSilenceMs;
+                    console.log(`[${nomeSessao}] 🔇 Auto-silêncio ativado por ${silenceTimeMinutesGlobal} min em ${jid} (intervenção humana).`);
+                }
+                return;
+            }
 
+            // --- VERIFICAÇÃO DE ATIVAÇÃO ---
             if (isGroup && texto.includes('/ativar?token=')) {
                 const token = texto.match(/token=([a-zA-Z0-9-]+)/)?.[1];
                 if (token) {
-                    // --- CORREÇÃO: Evitar processamento duplo ---
-                    if (processedActivations.has(token)) return;
-                    processedActivations.add(token);
-                    setTimeout(() => processedActivations.delete(token), 60000); // Limpa após 1 min
-
                     console.log(`[${nomeSessao}] Link de ativação detectado no grupo ${jid}`);
-                    
-                    // Reage com ampulheta para indicar processamento
-                    await sock.sendMessage(jid, { react: { text: "⏳", key: msg.key } });
-                    
                     const meta = await sock.groupMetadata(jid);
                     socket.emit('group-activation-request', { groupId: jid, groupName: meta.subject, activationToken: token, botSessionName: nomeSessao });
                     return; 
@@ -936,7 +937,10 @@ if (platform === 'telegram') {
                 return;
             }
 
+            // --- LÓGICA DE ADMINISTRAÇÃO (WHATSAPP) ---
             if (isGroup && botType === 'group') {
+                
+                // 1. Anti-Link
                 if (groupConfig && groupConfig.antiLink) {
                     const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(wa\.me\/[^\s]+)/gi;
                     if (linkRegex.test(texto)) {
@@ -952,12 +956,14 @@ if (platform === 'telegram') {
                     }
                 }
 
+                // 2. Comandos Admin
                 if (texto.startsWith('!') || texto.startsWith('/') || texto.startsWith('.')) {
                     const args = texto.slice(1).trim().split(/ +/);
                     const comando = args.shift().toLowerCase();
                     const senderIsAdm = await isGroupAdminWA(sock, jid, sender);
                     const botIsAdm = await isBotAdminWA(sock, jid);
 
+                    // Comandos Públicos
                     if (comando === 'ping') {
                         const start = Date.now();
                         await sock.sendMessage(jid, { text: `🏓 Pong! Latência: ${start - (msg.messageTimestamp * 1000)}ms` }, { quoted: msg });
@@ -966,28 +972,27 @@ if (platform === 'telegram') {
 
                     if (comando === 'menu' || comando === 'ajuda') {
                         let menu = `🤖 *MENU DE COMANDOS*\n\n`;
-                        menu += `👤 *Comandos Públicos:*\n`;
-                        menu += `!ping - Verifica latência do bot.\n`;
-                        menu += `!stop - Pausa a IA por 10min.\n`;
-                        menu += `!stopsempre - Ignora o usuário permanentemente.\n`;
+                        menu += `👤 *Públicos:*\n`;
+                        menu += `!menu - Exibe esta lista detalhada de comandos.\n`;
+                        menu += `!ping - Verifica se o bot está online e a latência.\n`;
+                        menu += `!stop - Pausa a IA por 10 minutos.\n`;
+                        menu += `!stopsempre - Ignora o usuário/grupo permanentemente.\n`;
 
                         if (senderIsAdm) {
                             menu += `\n👮 *Administração (Apenas Admins):*\n`;
-                            menu += `!config - Ver configurações atuais.\n`;
-                            menu += `!boasvindas <on/off> - Ativa/Desativa boas vindas.\n`;
-                            menu += `!msgboasvindas <texto> - Define msg (use @user).\n`;
-                            menu += `!ban @user - Remove um membro.\n`;
+                            menu += `!ban @user - Bane (remove) o usuário do grupo.\n`;
                             menu += `!kick @user - O mesmo que banir.\n`;
                             menu += `!promover @user - Torna um usuário administrador.\n`;
-                            menu += `!rebaixar @user - Tira o admin de um usuário.\n`;
+                            menu += `!rebaixar @user - Remove o admin de um usuário.\n`;
+                            menu += `!boasvindas <texto> - Configura mensagem (use #nome, #grupo) ou 'off'.\n`;
                             menu += `!apagar (responda) - Apaga a mensagem respondida.\n`;
-                            menu += `!fechar - Fecha o grupo (só admins enviam).\n`;
-                            menu += `!abrir - Abre o grupo.\n`;
+                            menu += `!fechar - Fecha o grupo para que apenas admins falem.\n`;
+                            menu += `!abrir - Abre o grupo para todos falarem.\n`;
                             menu += `!todos - Marca todos os membros do grupo.\n`;
-                            menu += `!titulo <nome> - Muda o nome do grupo.\n`;
-                            menu += `!descricao <texto> - Muda a descrição.\n`;
-                            menu += `!link - Pega o link de convite.\n`;
-                            menu += `!antilink <on/off> - Liga/Desliga proteção de links.\n`;
+                            menu += `!titulo <nome> - Altera o nome do grupo.\n`;
+                            menu += `!descricao <texto> - Altera a descrição do grupo.\n`;
+                            menu += `!link - Exibe o link de convite do grupo.\n`;
+                            menu += `!antilink <on/off> - Ativa/Desativa remoção de links.\n`;
                             menu += `!reset - Limpa a memória da conversa com a IA.\n`;
                             menu += `!sair - O bot sai do grupo.\n`;
                         }
@@ -1006,31 +1011,6 @@ if (platform === 'telegram') {
                         }
 
                         switch (comando) {
-                            case 'config':
-                                let cfg = `⚙️ *Configurações do Grupo*\n\n`;
-                                cfg += `🛡️ Anti-Link: *${authorizedGroups[jid].antiLink ? 'ON' : 'OFF'}*\n`;
-                                cfg += `👋 Boas Vindas: *${authorizedGroups[jid].welcomeEnabled ? 'ON' : 'OFF'}*\n`;
-                                cfg += `📝 Msg Boas Vindas: _${authorizedGroups[jid].welcomeMessage || 'Padrão'}_\n`;
-                                cfg += `🔇 Tempo Silêncio: ${authorizedGroups[jid].silenceTime} min\n`;
-                                await sock.sendMessage(jid, { text: cfg }, { quoted: msg });
-                                return;
-
-                            case 'boasvindas':
-                                if(!args[0]) return sock.sendMessage(jid, { text: 'Use: !boasvindas on ou !boasvindas off' });
-                                const welcomeState = args[0].toLowerCase() === 'on';
-                                authorizedGroups[jid].welcomeEnabled = welcomeState;
-                                socket.emit('update-group-settings', {groupId:jid, settings:{welcomeEnabled: welcomeState}});
-                                await sock.sendMessage(jid, { text: `👋 Boas Vindas agora está: *${welcomeState ? 'LIGADO' : 'DESLIGADO'}*` });
-                                return;
-
-                            case 'msgboasvindas':
-                                if(!args.length) return sock.sendMessage(jid, { text: 'Digite a mensagem. Use @user para marcar o novo membro.' });
-                                const novaMsg = args.join(' ');
-                                authorizedGroups[jid].welcomeMessage = novaMsg;
-                                socket.emit('update-group-settings', {groupId:jid, settings:{welcomeMessage: novaMsg}});
-                                await sock.sendMessage(jid, { text: `✅ Mensagem de boas vindas atualizada!` });
-                                return;
-
                             case 'ban':
                             case 'banir':
                             case 'kick':
@@ -1069,13 +1049,13 @@ if (platform === 'telegram') {
                                 return;
 
                             case 'fechar':
-                                if (!botIsAdm) return sock.sendMessage(jid, { text: '🔒 Grupo fechado.' }, { quoted: msg });
+                                if (!botIsAdm) return sock.sendMessage(jid, { text: '❌ Preciso ser ADM.' }, { quoted: msg });
                                 await sock.groupSettingUpdate(jid, 'announcement');
                                 await sock.sendMessage(jid, { text: '🔒 Grupo fechado.' });
                                 return;
 
                             case 'abrir':
-                                if (!botIsAdm) return sock.sendMessage(jid, { text: '🔓 Grupo aberto.' }, { quoted: msg });
+                                if (!botIsAdm) return sock.sendMessage(jid, { text: '❌ Preciso ser ADM.' }, { quoted: msg });
                                 await sock.groupSettingUpdate(jid, 'not_announcement');
                                 await sock.sendMessage(jid, { text: '🔓 Grupo aberto.' });
                                 return;
@@ -1125,11 +1105,22 @@ if (platform === 'telegram') {
                                 socket.emit('update-group-settings', { groupId: jid, settings: { antiLink: novoEstado } });
                                 await sock.sendMessage(jid, { text: `🛡️ Anti-Link agora está: *${novoEstado ? 'LIGADO' : 'DESLIGADO'}*` });
                                 return;
+
+                            case 'boasvindas':
+                                if (!args.length) return sock.sendMessage(jid, { text: '❌ Digite a mensagem ou "off". Ex: !boasvindas Olá #nome!' }, { quoted: msg });
+                                const novaMsg = args.join(' ');
+                                const valueToSave = novaMsg.toLowerCase() === 'off' ? 'off' : novaMsg;
+                                authorizedGroups[jid].welcomeMessage = valueToSave;
+                                socket.emit('update-group-settings', { groupId: jid, settings: { welcomeMessage: valueToSave } });
+                                if (valueToSave === 'off') await sock.sendMessage(jid, { text: '🔕 Mensagem de boas-vindas desativada.' });
+                                else await sock.sendMessage(jid, { text: '✅ Mensagem de boas-vindas configurada.' });
+                                return;
                         }
                     }
                 }
             }
 
+            if (pausados[jid] && Date.now() < pausados[jid]) return;
             if (ignoredIdentifiers.some(i => (i.type === 'number' && sender.includes(i.value)) || (i.type === 'name' && msg.pushName?.toLowerCase() === i.value.toLowerCase()))) return;
 
             let shouldRespond = true;
@@ -1189,5 +1180,3 @@ if (platform === 'telegram') {
 
 process.on('uncaughtException', (err) => { console.error('Exceção não tratada:', err); });
 process.on('unhandledRejection', (reason, promise) => { console.error('Rejeição não tratada:', reason); });
-
-
