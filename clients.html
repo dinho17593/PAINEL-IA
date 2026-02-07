@@ -16,10 +16,11 @@
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
     :root {
+        /* Mesma paleta do Dashboard Principal */
         --bg-body: #09090b;
         --bg-card: #18181b; 
         --bg-input: #09090b;
-        --bg-sidebar: rgba(24, 24, 27, 0.85); 
+        --bg-sidebar: rgba(24, 24, 27, 0.95); 
         
         --text-main: #f4f4f5;
         --text-muted: #a1a1aa;
@@ -37,7 +38,7 @@
         --yellow: #f59e0b;
         --cyan: #06b6d4;
         
-        --header-height: 70px;
+        --header-height: 60px; /* Ajustado para igualar o painel */
         --radius-sm: 8px;
         --radius-md: 12px;
         --radius-lg: 24px;
@@ -59,50 +60,66 @@
         overflow-x: hidden; 
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
+        font-size: 0.9rem;
     }
     
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
     .hidden { display: none !important; }
     
-    .input-group { margin-bottom: 25px; position: relative; } 
-    .input-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: 600; font-size: 0.9rem; color: var(--text-main); letter-spacing: 0.02em; }
-    .help-text { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; display: block; line-height: 1.5; }
+    .input-group { margin-bottom: 20px; position: relative; } 
+    .input-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: var(--text-main); letter-spacing: 0.02em; }
+    .help-text { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; display: block; line-height: 1.4; }
 
     input, textarea, select { 
-        width: 100%; padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); 
-        border-radius: var(--radius-md); color: var(--text-main); font-size: 0.95rem; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s ease;
+        width: 100%; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); 
+        border-radius: var(--radius-md); color: var(--text-main); font-size: 0.9rem; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s ease;
     }
     input:focus, textarea:focus, select:focus { border-color: var(--primary); background: rgba(255,255,255,0.05); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
     input::placeholder { color: #52525b; }
 
     header { position: sticky; top: 0; z-index: 100; background: rgba(9, 9, 11, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
-    .nav-bar { height: var(--header-height); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: relative; max-width: 1200px; margin: 0 auto; }
-    .nav-btn { background: transparent; border: 1px solid transparent; color: var(--text-muted); font-size: 1.2rem; padding: 0; cursor: pointer; border-radius: 12px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; text-decoration: none; }
+    .nav-bar { height: var(--header-height); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: relative; max-width: 1200px; margin: 0 auto; }
+    
+    .nav-btn { background: transparent; border: 1px solid transparent; color: var(--text-muted); font-size: 1.1rem; padding: 0; cursor: pointer; border-radius: 12px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; text-decoration: none; }
     .nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-main); border-color: var(--border); }
     
-    .brand-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 1.3rem; font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px; white-space: nowrap; letter-spacing: -0.03em; }
+    .brand-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 1.1rem; font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; white-space: nowrap; letter-spacing: -0.03em; }
     .brand-center i { color: var(--primary); filter: drop-shadow(0 0 8px var(--primary-glow)); }
     
     button { cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; border: none; }
     
-    .btn-primary { background: var(--primary); background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%); color: white; padding: 16px; border-radius: var(--radius-md); font-weight: 600; width: 100%; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .btn-primary { background: var(--primary); background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%); color: white; padding: 14px; border-radius: var(--radius-md); font-weight: 600; width: 100%; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden; }
     .btn-primary:hover { box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5); transform: translateY(-2px); }
+    .btn-primary:active { transform: scale(0.98) translateY(0); }
     .btn-primary:disabled { background: #27272a; color: #52525b; cursor: not-allowed; box-shadow: none; transform: none; }
 
-    .btn-danger-sm { background: rgba(244, 63, 94, 0.15); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-    .btn-danger-sm:hover { background: rgba(244, 63, 94, 0.25); transform: scale(1.02); }
+    .btn-danger-sm { background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.2); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+    .btn-danger-sm:hover { background: rgba(244, 63, 94, 0.2); transform: translateY(-1px); }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-    .modal-content { background: #18181b; padding: 30px; border-radius: 24px; width: 90%; max-width: 580px; border: 1px solid var(--border); animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1); max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    .modal-content { background: #18181b; padding: 25px; border-radius: 20px; width: 90%; max-width: 580px; border: 1px solid var(--border); animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1); max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
     @keyframes slideUpFade { from { transform: translateY(40px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
     
-    .form-section { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 25px; }
+    /* Estilo unificado com os Cards do Dashboard */
+    .form-section { 
+        background: var(--bg-card); 
+        border: 1px solid var(--border); 
+        border-radius: 18px; 
+        padding: 20px; 
+        margin-bottom: 20px; 
+        transition: all 0.3s ease;
+    }
+    .form-section:hover {
+        border-color: rgba(255,255,255,0.15);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        transform: translateY(-2px);
+    }
     
-    #feedback-area { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); z-index: 10000; padding: 14px 30px; border-radius: 50px; font-size: 0.95rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; width: auto; min-width: 300px; text-align: center; backdrop-filter: blur(10px); }
+    #feedback-area { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); z-index: 10000; padding: 12px 25px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; width: auto; min-width: 300px; text-align: center; backdrop-filter: blur(10px); }
     .feedback-success { background: rgba(16, 185, 129, 0.9); color: white; }
     .feedback-error { background: rgba(244, 63, 94, 0.9); color: white; }
 
-    .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 800px) { 
         .grid-container { grid-template-columns: 1fr; } 
         .form-section { padding: 15px; } 
@@ -120,55 +137,56 @@
         border-bottom: 1px solid var(--border); 
         vertical-align: middle;
     }
-    .data-table th { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .data-table th { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
     .data-table td {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 500;
+        color: var(--text-main);
         word-break: break-word;
     }
     
     /* Colunas Específicas */
     .col-check { width: 40px; text-align: center; padding-left: 5px !important; padding-right: 5px !important; }
-    .col-actions { width: 60px; text-align: center; padding-left: 5px !important; padding-right: 5px !important; }
+    .col-actions { width: 80px; text-align: center; padding-left: 5px !important; padding-right: 5px !important; }
     
     /* Checkbox Customizado */
     input[type="checkbox"].row-selector, input[type="checkbox"].header-selector {
-        width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;
+        width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
-    .data-table .action-icon { cursor: pointer; color: var(--text-muted); transition: 0.2s; font-size: 1.1rem; padding: 5px; }
-    .data-table .action-icon:hover { color: var(--primary); transform: scale(1.2); }
-    .data-table .action-icon.delete:hover { color: var(--red); }
+    .data-table .action-icon { cursor: pointer; color: var(--text-muted); transition: 0.2s; font-size: 1rem; padding: 6px; border-radius: 6px; }
+    .data-table .action-icon:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
+    .data-table .action-icon.delete:hover { color: var(--red); background: rgba(244, 63, 94, 0.1); }
 
     .table-wrapper {
         max-height: 400px;
         overflow-y: auto;
         overflow-x: auto;
-        background: var(--bg-input);
+        background: rgba(0,0,0,0.2);
         border-radius: 12px;
         border: 1px solid var(--border);
     }
 
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 16px; margin-top: 20px; background: rgba(255,255,255,0.01); }
     .empty-state i { font-size: 2.5rem; margin-bottom: 15px; color: var(--primary); opacity: 0.4; }
-    .empty-state h3 { color: var(--text-main); margin: 0 0 8px 0; font-size: 1.1rem; }
+    .empty-state h3 { color: var(--text-main); margin: 0 0 8px 0; font-size: 1rem; }
 
-    .checkbox-list { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--bg-input); }
-    .checkbox-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; transition: 0.2s; cursor: pointer; }
+    .checkbox-list { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.2); }
+    .checkbox-item { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 8px; transition: 0.2s; cursor: pointer; font-size: 0.85rem; }
     .checkbox-item:hover { background: rgba(255,255,255,0.05); }
-    .checkbox-item input { width: 18px; height: 18px; accent-color: var(--primary); }
-    .checkbox-item label { font-weight: 500; }
+    .checkbox-item input { width: 16px; height: 16px; accent-color: var(--primary); }
+    .checkbox-item label { font-weight: 500; cursor: pointer; width: 100%; }
 
-    .tag { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .tag { font-size: 0.65rem; padding: 3px 8px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
     .tag-blue { background: rgba(59, 130, 246, 0.1); color: var(--blue); border: 1px solid rgba(59, 130, 246, 0.2); }
     .tag-green { background: rgba(16, 185, 129, 0.1); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.2); }
     .tag-yellow { background: rgba(245, 158, 11, 0.1); color: var(--yellow); border: 1px solid rgba(245, 158, 11, 0.2); }
     .tag-red { background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.2); }
 
     /* Tabs para o Modal */
-    .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
-    .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 8px; transition: 0.2s; white-space: nowrap; }
+    .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+    .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 8px; transition: 0.2s; white-space: nowrap; font-size: 0.85rem; }
     .tab-btn.active { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
     .tab-btn:hover:not(.active) { color: var(--text-main); background: rgba(255,255,255,0.05); }
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
@@ -178,7 +196,7 @@
     /* Estilo específico para a data no histórico */
     .date-cell {
         white-space: nowrap; /* Impede quebra de linha */
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: var(--text-muted);
     }
     @media (max-width: 480px) {
@@ -216,12 +234,12 @@
 
         /* Ajusta o cabeçalho do modal */
         #history-modal h3 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
         
         /* Botão de fechar maior para toque */
         #history-modal .fa-times {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             padding: 10px;
         }
     }
@@ -261,6 +279,68 @@
         from { top: -45px; }
         to { top: -55px; }
     }
+
+    /* --- ESTILOS DO MODAL DE VÍDEO --- */
+    .video-modal-content {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        width: auto !important;
+        max-width: 100% !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .video-container {
+        position: relative;
+        width: auto;
+        max-width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .video-player {
+        max-height: 85vh; /* Garante que cabe na tela verticalmente */
+        max-width: 100%;
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        background: #000;
+    }
+
+    .close-video-btn {
+        position: absolute;
+        top: -40px;
+        right: 0;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+        z-index: 2002;
+        background: rgba(0,0,0,0.5);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+    .close-video-btn:hover { background: rgba(255,255,255,0.2); }
+
+    @media (max-width: 768px) {
+        .close-video-btn {
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+        }
+        .video-player {
+            max-height: 90vh;
+            width: 100%;
+        }
+    }
     </style>
 </head>
 <body>
@@ -269,8 +349,8 @@
     <header>
         <div class="nav-bar">
             <a href="/" class="nav-btn"><i class="fas fa-chevron-left"></i></a>
-            <div class="brand-center"><i class="fas fa-users-cog"></i> Gerenciador de Clientes</div>
-            <div style="width: 42px;"></div>
+            <div class="brand-center"><i class="fas fa-users-cog"></i>Gestor de Cobranças</div>
+            <div style="width: 38px;"></div>
         </div>
     </header>
 
@@ -278,7 +358,7 @@
         
         <!-- Descrição da Página -->
         <div style="text-align: center; margin-bottom: 30px; padding: 0 10px;">
-            <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 800px; margin: 0 auto;">
+            <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 800px; margin: 0 auto;">
                 Gerencie sua lista de contatos, configure o recebimento via Pix e crie campanhas de cobrança ou avisos automáticos para seus clientes de forma simples e eficiente.
             </p>
         </div>
@@ -286,19 +366,41 @@
         <!-- Seção de Configuração de Pagamento (Para todos os usuários) -->
         <div class="form-section" style="border-color: var(--cyan);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0; color: var(--cyan);"><i class="fas fa-wallet"></i> Configuração de Recebimento</h3>
+                <h3 style="margin:0; color: var(--cyan); font-size: 1.1rem;"><i class="fas fa-wallet"></i> Configuração de Recebimento</h3>
                 <!-- Botão para abrir o Histórico -->
-                <button class="btn-primary" onclick="openHistoryModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem; background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: none;">
+                <button class="btn-primary" onclick="openHistoryModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem; background: rgba(6, 182, 212, 0.1); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: none;">
                     <i class="fas fa-history"></i> Histórico
                 </button>
             </div>
-            <p class="help-text">Para receber pagamentos via Pix nas suas campanhas de cobrança, insira seu Token de Produção do Mercado Pago abaixo.</p>
+            
+            <p class="help-text" style="margin-bottom: 15px;">Para receber pagamentos via Pix nas suas campanhas de cobrança, insira seu Token de Produção do Mercado Pago abaixo.</p>
+            
+            <!-- NOVO: Bloco de Ajuda para o Token -->
+            <div style="background: rgba(6, 182, 212, 0.05); border: 1px dashed rgba(6, 182, 212, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.85rem;">
+                <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <i class="fas fa-video" style="color: var(--cyan);"></i>
+                    <span style="color: var(--text-muted);">Não sabe criar seu access token?</span>
+                    <!-- LINK ALTERADO PARA ABRIR MODAL -->
+                    <a href="javascript:void(0)" onclick="openVideoTutorial()" style="color: var(--cyan); font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                        Clique aqui para ver o tutorial <i class="fas fa-play-circle" style="font-size: 0.9em;"></i>
+                    </a>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <i class="fas fa-link" style="color: var(--cyan);"></i>
+                    <span style="color: var(--text-muted);">Crie seu token acessando:</span>
+                    <!-- LINK AJUSTADO PARA ABRIR EXTERNAMENTE COM SEGURANÇA -->
+                    <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                        Painel de Desenvolvedor MP <i class="fas fa-external-link-alt" style="font-size: 0.8em;"></i>
+                    </a>
+                </div>
+            </div>
+
             <form id="user-payment-config-form" style="display: flex; gap: 15px; align-items: flex-end;">
                 <div class="input-group" style="margin-bottom: 0; flex: 1;">
                     <label class="input-label">Seu Token Mercado Pago (Produção)</label>
                     <input type="text" id="user-mp-token" placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
                 </div>
-                <button type="submit" id="btn-save-token" class="btn-primary" style="width: auto; background: var(--cyan); color: #000;">Salvar Token</button>
+                <button type="submit" id="btn-save-token" class="btn-primary" style="width: auto; background: var(--cyan); color: #000; border: none;">Salvar Token</button>
             </form>
         </div>
 
@@ -308,7 +410,7 @@
             <div class="form-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;">
                     <div style="display:flex; align-items:center; gap: 10px;">
-                        <h3 style="margin:0;"><i class="fas fa-users" style="color:var(--primary)"></i> Meus Clientes</h3>
+                        <h3 style="margin:0; font-size: 1.1rem;"><i class="fas fa-users" style="color:var(--primary)"></i> Meus Clientes</h3>
                         <!-- Botão de Exclusão em Massa (Oculto por padrão) -->
                         <button id="btn-bulk-delete-clients" class="btn-danger-sm hidden" onclick="deleteSelectedClients()">
                             <i class="fas fa-trash"></i> Excluir (<span id="count-clients">0</span>)
@@ -335,13 +437,13 @@
             <div class="form-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;">
                     <div style="display:flex; align-items:center; gap: 10px;">
-                        <h3 style="margin:0;"><i class="fas fa-bullhorn" style="color:var(--green)"></i> Campanhas</h3>
+                        <h3 style="margin:0; font-size: 1.1rem;"><i class="fas fa-bullhorn" style="color:var(--green)"></i> Campanhas</h3>
                         <!-- Botão de Exclusão em Massa (Oculto por padrão) -->
                         <button id="btn-bulk-delete-campaigns" class="btn-danger-sm hidden" onclick="deleteSelectedCampaigns()">
                             <i class="fas fa-trash"></i> Excluir (<span id="count-campaigns">0</span>)
                         </button>
                     </div>
-                    <button id="btn-new-campaign" class="btn-primary" onclick="openCampaignModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem; background:var(--green);"><i class="fas fa-plus"></i> Nova Campanha</button>
+                    <button id="btn-new-campaign" class="btn-primary" onclick="openCampaignModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem; background: rgba(16, 185, 129, 0.1); color: var(--green); border: 1px solid var(--green);"><i class="fas fa-plus"></i> Nova Campanha</button>
                 </div>
                 <div class="table-wrapper">
                     <table class="data-table" id="campaigns-table">
@@ -366,7 +468,7 @@
     <div id="history-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 700px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items: center;">
-                <h3 style="margin:0; color: var(--green);"><i class="fas fa-receipt"></i> Histórico Financeiro</h3>
+                <h3 style="margin:0; color: var(--green); font-size: 1.1rem;"><i class="fas fa-receipt"></i> Histórico Financeiro</h3>
                 <i class="fas fa-times" onclick="closeHistoryModal()" style="padding:10px; cursor:pointer; font-size: 1.2rem;"></i>
             </div>
 
@@ -403,7 +505,7 @@
     <div id="client-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 500px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <h3 style="margin:0;">Adicionar Clientes</h3>
+                <h3 style="margin:0; font-size: 1.1rem;">Adicionar Clientes</h3>
                 <i class="fas fa-times" onclick="closeClientModal()" style="padding:10px; cursor:pointer;"></i>
             </div>
 
@@ -473,7 +575,7 @@
     <div id="campaign-modal" class="modal-overlay">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <h3 style="margin:0;" id="campaign-modal-title">Criar Nova Campanha</h3>
+                <h3 style="margin:0; font-size: 1.1rem;" id="campaign-modal-title">Criar Nova Campanha</h3>
                 <i class="fas fa-times" onclick="closeCampaignModal()" style="padding:10px; cursor:pointer;"></i>
             </div>
             <form id="campaign-form">
@@ -543,6 +645,38 @@
         </div>
     </div>
 
+    <!-- Modal Alerta Sem Robô -->
+    <div id="no-bot-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center; max-width: 400px;">
+            <i class="fas fa-robot" style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"></i>
+            <h3 style="margin-top: 0;">Nenhum Robô Encontrado</h3>
+            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.9rem;">
+                Para criar campanhas, você precisa de pelo menos um robô (WhatsApp) conectado.
+            </p>
+            <button class="btn-primary" onclick="window.location.href='/?action=create_bot'">
+                <i class="fas fa-plus-circle"></i> Criar Robô Agora
+            </button>
+            <button class="btn-danger-sm" onclick="document.getElementById('no-bot-modal').style.display='none'" style="margin-top: 15px; width: 100%; justify-content: center; background: transparent; border: none; color: var(--text-muted);">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <!-- NOVO: Modal de Vídeo Tutorial -->
+    <div id="video-modal" class="modal-overlay">
+        <div class="modal-content video-modal-content">
+            <div class="video-container">
+                <div class="close-video-btn" onclick="closeVideoTutorial()">
+                    <i class="fas fa-times"></i>
+                </div>
+                <video id="tutorial-video" class="video-player" controls playsinline>
+                    <source src="" type="video/mp4">
+                    Seu navegador não suporta a reprodução de vídeos.
+                </video>
+            </div>
+        </div>
+    </div>
+
     <script>
         const socket = io();
         let allPayments = []; // Armazena todos os pagamentos localmente para filtragem
@@ -551,6 +685,7 @@
         let clientCount = 0;
         let campaignCount = 0;
         let hasToken = false;
+        let availableBotsList = []; // Armazena a lista de bots disponíveis
 
         // Funções de UI (Modais, Tabs)
         const openClientModal = () => document.getElementById('client-modal').style.display = 'flex';
@@ -563,7 +698,39 @@
         };
         const closeHistoryModal = () => document.getElementById('history-modal').style.display = 'none';
 
-        window.onclick = (e) => { if(e.target.className === 'modal-overlay') e.target.style.display='none'; };
+        // --- LÓGICA DO MODAL DE VÍDEO ---
+        const tutorialUrl = "https://www.dropbox.com/scl/fi/g4jkzeexyaoole2msnn7i/InShot_20260205_084539826.mp4?rlkey=oxsxu5nrna51vs83mnpx6fl4y&st=vdfnhbld&dl&raw=1";
+
+        function openVideoTutorial() {
+            const modal = document.getElementById('video-modal');
+            const video = document.getElementById('tutorial-video');
+            
+            // Define a fonte apenas ao abrir para economizar dados
+            video.src = tutorialUrl;
+            modal.style.display = 'flex';
+            
+            // Tenta iniciar automaticamente
+            video.play().catch(e => console.log("Autoplay bloqueado pelo navegador, usuário deve clicar play"));
+        }
+
+        function closeVideoTutorial() {
+            const modal = document.getElementById('video-modal');
+            const video = document.getElementById('tutorial-video');
+            
+            video.pause();
+            video.src = ""; // Limpa a fonte para parar o download/buffer
+            modal.style.display = 'none';
+        }
+
+        window.onclick = (e) => { 
+            if(e.target.className === 'modal-overlay') {
+                e.target.style.display='none';
+                // Se for o modal de vídeo, pausa o vídeo também
+                if(e.target.id === 'video-modal') {
+                    closeVideoTutorial();
+                }
+            }
+        };
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -808,17 +975,29 @@
         function renderBotSelector(bots) {
             const selector = document.getElementById('campaign-bot-selector');
             selector.innerHTML = '<option value="">Selecione um Robô</option>';
-            const individualBots = bots.filter(b => b.botType === 'individual' || !b.botType);
-            if (individualBots.length === 0) {
-                selector.innerHTML = '<option value="">Nenhum robô de atendimento privado encontrado</option>';
+            
+            // Filtra apenas para garantir que seja WhatsApp
+            const availableBots = bots.filter(b => b.platform !== 'telegram');
+            availableBotsList = availableBots; // Atualiza a lista global
+            
+            if (availableBots.length === 0) {
+                selector.innerHTML = '<option value="">Nenhum robô disponível (WhatsApp)</option>';
                 return;
             }
-            individualBots.forEach(bot => {
+            
+            availableBots.forEach(bot => {
                 const option = document.createElement('option');
                 option.value = bot.sessionName;
-                option.textContent = `${bot.publicName || bot.sessionName} (${bot.platform})`;
+                // Adiciona rótulo para identificar o tipo
+                const typeLabel = bot.botType === 'group' ? '[Grupo]' : '[Privado]';
+                option.textContent = `${typeLabel} ${bot.publicName || bot.sessionName}`;
                 selector.appendChild(option);
             });
+
+            // SELEÇÃO AUTOMÁTICA: Se houver apenas 1 robô, seleciona ele
+            if (availableBots.length === 1) {
+                selector.value = availableBots[0].sessionName;
+            }
         }
 
         // Lógica de Formulários e Ações
@@ -971,6 +1150,12 @@
                 targetBot: document.getElementById('campaign-bot-selector').value,
                 clients: selectedClients
             };
+
+            // ===== AJUSTE PRINCIPAL APLICADO AQUI =====
+            if (campaignData.type === 'cobranca' && !hasToken) {
+                showFeedback(false, 'Para criar campanhas de cobrança, salve seu Token do Mercado Pago primeiro.');
+                return; // Impede o envio do formulário
+            }
             
             if (campaignData.type === 'cobranca' && (!campaignData.value || campaignData.value <= 0)) {
                 showFeedback(false, 'Para cobranças, o valor deve ser maior que zero.');
@@ -1011,22 +1196,38 @@
         }
 
         function openCampaignModal(campaignId = null) {
-            const form = document.getElementById('campaign-form');
-            form.reset();
-            document.getElementById('campaign-id').value = '';
-            
-            document.querySelectorAll('input[name="campaignClients"]').forEach(cb => cb.checked = false);
+            // Força atualização da lista de robôs ao abrir o modal
+            socket.emit('bots:get-for-clients');
 
-            if (campaignId) {
-                document.getElementById('campaign-modal-title').innerText = 'Editar Campanha';
-                socket.emit('campaigns:get-single', { id: campaignId });
-            } else {
-                document.getElementById('campaign-modal-title').innerText = 'Criar Nova Campanha';
-            }
-            
-            toggleCampaignValue();
-            toggleScheduleInputs();
-            document.getElementById('campaign-modal').style.display = 'flex';
+            // Pequeno delay para garantir que a lista atualizou (opcional, mas seguro)
+            setTimeout(() => {
+                // VERIFICAÇÃO DE ROBÔS ANTES DE ABRIR
+                if (availableBotsList.length === 0) {
+                    document.getElementById('no-bot-modal').style.display = 'flex';
+                    return;
+                }
+
+                const form = document.getElementById('campaign-form');
+                form.reset();
+                document.getElementById('campaign-id').value = '';
+                
+                document.querySelectorAll('input[name="campaignClients"]').forEach(cb => cb.checked = false);
+
+                if (campaignId) {
+                    document.getElementById('campaign-modal-title').innerText = 'Editar Campanha';
+                    socket.emit('campaigns:get-single', { id: campaignId });
+                } else {
+                    document.getElementById('campaign-modal-title').innerText = 'Criar Nova Campanha';
+                    // Se houver apenas 1 robô, garante que ele esteja selecionado ao abrir o modal
+                    if (availableBotsList.length === 1) {
+                        document.getElementById('campaign-bot-selector').value = availableBotsList[0].sessionName;
+                    }
+                }
+                
+                toggleCampaignValue();
+                toggleScheduleInputs();
+                document.getElementById('campaign-modal').style.display = 'flex';
+            }, 100);
         }
 
         // --- ONBOARDING GUIDE SYSTEM ---
@@ -1041,19 +1242,20 @@
                 return;
             }
 
-            // Passo 2: Tem clientes, mas não tem Token? Aponta para Salvar Token
-            if (!hasToken) {
-                const btn = document.getElementById('btn-save-token');
-                if(btn) btn.classList.add('guide-highlight');
-                return;
-            }
-
-            // Passo 3: Tem clientes e token, mas não tem campanhas? Aponta para Nova Campanha
+            // Passo 2: Tem clientes e token, mas não tem campanhas? Aponta para Nova Campanha
             if (campaignCount === 0) {
                 const btn = document.getElementById('btn-new-campaign');
                 if(btn) btn.classList.add('guide-highlight');
                 return;
             }
+
+            // Passo 3 (Opcional): Tem clientes, mas não tem Token? Aponta para Salvar Token
+            // Removido da lógica principal para não ser obrigatório
+            // if (!hasToken) {
+            //     const btn = document.getElementById('btn-save-token');
+            //     if(btn) btn.classList.add('guide-highlight');
+            //     return;
+            // }
         }
 
         // Listeners do Socket.IO
