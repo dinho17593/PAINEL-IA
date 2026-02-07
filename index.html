@@ -155,9 +155,10 @@
     .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .sidebar-content { padding: 15px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
     
-    .sidebar-footer { padding: 15px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.2); }
-    .sidebar-footer .sidebar-btn { color: var(--red); }
-    .sidebar-footer .sidebar-btn:hover { background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.2); }
+    .sidebar-footer { padding: 15px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 8px; }
+    .sidebar-footer .sidebar-btn { color: var(--text-muted); }
+    .sidebar-footer .logout-btn { color: var(--red); }
+    .sidebar-footer .logout-btn:hover { background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.2); }
 
     .sidebar-title { font-size: 1.1rem; font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--text-main); }
     
@@ -172,6 +173,33 @@
     .btn-primary:hover { box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5); transform: translateY(-2px); }
     .btn-primary:active { transform: scale(0.98) translateY(0); }
     .btn-primary:disabled { background: #27272a; color: #52525b; cursor: not-allowed; box-shadow: none; transform: none; }
+
+    /* --- ESTILO NOVO DO BOTÃO NOVO ROBÔ --- */
+    #btn-new-bot {
+        background: rgba(99, 102, 241, 0.1); /* Fundo transparente/roxo leve */
+        border: 1px solid var(--primary); /* Borda neon */
+        color: var(--primary);
+        padding: 8px 20px;
+        border-radius: 12px; /* Arredondamento igual aos cards */
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.1);
+        width: auto;
+    }
+
+    #btn-new-bot:hover {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 0 20px var(--primary-glow);
+        transform: translateY(-2px);
+    }
+    
+    #btn-new-bot i { font-size: 0.9rem; }
+    /* -------------------------------------- */
 
     .btn-google { background: white; color: #18181b; width: 100%; padding: 12px; border-radius: var(--radius-md); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; transition: all 0.2s; border: 1px solid #e4e4e7; font-size: 0.9rem; }
     .btn-google:hover { background: #f4f4f5; transform: translateY(-1px); }
@@ -608,6 +636,25 @@
         from { top: -45px; }
         to { top: -55px; }
     }
+
+    /* --- FOOTER & LEGAL STYLES --- */
+    .app-footer {
+        text-align: center;
+        padding: 30px 0;
+        margin-top: 40px;
+        border-top: 1px solid var(--border);
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+    .app-footer p { margin: 0 0 10px 0; }
+    .app-footer a { color: var(--text-muted); text-decoration: none; margin: 0 10px; transition: 0.2s; }
+    .app-footer a:hover { color: var(--primary); text-decoration: underline; }
+    
+    .legal-content { text-align: left; line-height: 1.6; color: #ccc; font-size: 0.9rem; }
+    .legal-content h4 { color: var(--text-main); margin-top: 20px; margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+    .legal-content p { margin-bottom: 10px; }
+    .legal-content ul { padding-left: 20px; margin-bottom: 15px; }
+    .legal-content li { margin-bottom: 5px; }
 </style>
 </head>
 <body>
@@ -629,14 +676,17 @@
             <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="navToDashboard()">
                 <i class="fas fa-home"></i> Início
             </button>
-            <button class="sidebar-btn" id="btn-nav-admin" onclick="navToAdminSettings()">
-                <i class="fas fa-cog"></i> Configurações & Backup
-            </button>
             <button class="sidebar-btn" onclick="window.location.href='/clients.html'">
-                <i class="fas fa-users-cog"></i> Gerenciador de Clientes
+                <i class="fas fa-users-cog"></i> Gestor de Cobranças
+            </button>
+            <button class="sidebar-btn" id="btn-nav-admin" onclick="navToAdminSettings()">
+                <i class="fas fa-cog"></i> Configurações do Sistema
             </button>
         </div>
         <div class="sidebar-footer">
+            <button class="sidebar-btn" onclick="openLegalModal()">
+                <i class="fas fa-shield-alt"></i> Privacidade e Termos
+            </button>
             <button class="sidebar-btn logout-btn" onclick="confirmLogout()">
                 <i class="fas fa-sign-out-alt"></i> Sair do Painel
             </button>
@@ -714,7 +764,7 @@
                         <h2 id="main-title-text" style="font-size: 1.1rem; margin: 0;">Meus Robôs</h2>
                         <p id="sub-title-text" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Aqui você cria e controla seus atendentes virtuais.</p>
                     </div>
-                    <button id="btn-new-bot" class="btn-primary" onclick="openCreateModal()" style="width: auto; padding: 10px 18px; font-size: 0.85rem;">
+                    <button id="btn-new-bot" onclick="openCreateModal()">
                         <i class="fas fa-plus"></i> Novo Robô
                     </button>
                 </div>
@@ -725,11 +775,28 @@
                     <h4>Histórico de Atividades</h4>
                     <div id="user-log-content" class="logs-container" style="height: 150px; color: #ccc;"></div>
                 </div>
+
+                <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border);">
+                    <button onclick="window.location.href='/clients.html'" class="btn-primary" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-muted); justify-content: space-between;">
+                        <span><i class="fas fa-users-cog"></i> Acessar Gestor de Cobranças</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- FOOTER PROFISSIONAL -->
+                <div class="app-footer">
+                    <p>&copy; 2026 zappbot. Todos os direitos reservados.</p>
+                    <div>
+                        <a href="javascript:void(0)" onclick="openLegalModal()">Termos de Uso</a> •
+                        <a href="javascript:void(0)" onclick="openLegalModal()">Política de Privacidade</a> •
+                        <a href="javascript:void(0)" onclick="openSupportChat()">Suporte</a>
+                    </div>
+                </div>
             </div>
 
             <div id="admin-settings-view" class="hidden">
                 <div id="view-header-admin" style="margin: 15px 0;">
-                    <h2 style="font-size: 1.1rem; margin: 0;">Configurações & Backup</h2>
+                    <h2 style="font-size: 1.1rem; margin: 0;">Configurações do Sistema</h2>
                     <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Gerencie seus dados e configurações.</p>
                 </div>
 
@@ -1121,6 +1188,35 @@
         </div>
     </div>
 
+    <!-- LEGAL MODAL (Privacy Policy & Terms) -->
+    <div id="legal-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;"><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Privacidade e Termos</h3>
+                <i class="fas fa-times" onclick="document.getElementById('legal-modal').style.display='none'" style="padding:10px; cursor:pointer;"></i>
+            </div>
+            <div class="legal-content">
+                <h4>1. Termos de Uso</h4>
+                <p>Ao utilizar o zappbot, você concorda em não utilizar a plataforma para envio de SPAM, conteúdo ilícito ou qualquer atividade que viole as políticas do WhatsApp ou Telegram.</p>
+                
+                <h4>2. Política de Privacidade</h4>
+                <p>Respeitamos sua privacidade. Coletamos apenas os dados necessários para o funcionamento do serviço:</p>
+                <ul>
+                    <li>Dados de login (usuário/email).</li>
+                    <li>Configurações dos robôs (prompts e nomes).</li>
+                    <li>Logs de operação (armazenados temporariamente para debug).</li>
+                </ul>
+                
+                <h4>3. Segurança dos Dados</h4>
+                <p>Não temos acesso às suas conversas privadas. O sistema atua apenas como uma interface de automação. As sessões do WhatsApp são criptografadas e armazenadas de forma segura pelo próprio whatsapp e telegram e não existem riscos de vazamento.</p>
+                
+                <h4>4. Responsabilidade</h4>
+                <p>O usuário é inteiramente responsável pelo conteúdo gerado e enviado por seus robôs. O zappbot não se responsabiliza por bloqueios de números decorrentes de mau uso.</p>
+            </div>
+            <button class="btn-primary" onclick="acceptTerms()" style="margin-top: 20px;">Entendi e Concordo</button>
+        </div>
+    </div>
+
     <!-- Custom Alert Modal -->
     <div id="custom-alert-modal" class="modal-overlay" style="z-index: 100000;">
         <div class="modal-content" style="max-width: 350px; text-align: center;">
@@ -1158,6 +1254,16 @@
         let groupsData = {}; 
         let viewedUser = null;
         let publicPrices = {};
+
+        // Legal Modal Function
+        function openLegalModal() {
+            document.getElementById('legal-modal').style.display = 'flex';
+        }
+
+        function acceptTerms() {
+            localStorage.setItem('zappbot_terms_accepted', 'true');
+            document.getElementById('legal-modal').style.display = 'none';
+        }
 
         // Custom Alert Functions
         function showCustomAlert(msg) {
@@ -1284,6 +1390,20 @@
                     socket.emit('admin-get-users');
                     socket.emit('admin-settings');
                 }
+            }
+
+            // VERIFICAÇÃO DE AÇÃO VIA URL (Ex: Criar Robô vindo de clients.html)
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('action') === 'create_bot') {
+                // Pequeno delay para garantir que o CSS/JS do modal esteja pronto
+                setTimeout(() => openCreateModal(), 500);
+                // Limpa a URL para não reabrir ao atualizar
+                window.history.replaceState({}, document.title, "/");
+            }
+
+            // Verifica se o usuário já aceitou os termos
+            if (!localStorage.getItem('zappbot_terms_accepted')) {
+                openLegalModal();
             }
         }
 
@@ -2978,48 +3098,60 @@
             }
         }
 
-        // --- ONBOARDING GUIDE SYSTEM ---
+        // --- ONBOARDING GUIDE SYSTEM (CORRIGIDO E REFORÇADO) ---
         function updateOnboardingSteps() {
-            // Remove highlights anteriores
+            // Remove highlights anteriores para garantir um estado limpo
             document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
 
             const botKeys = Object.keys(botsData);
             
-            // Passo 1: Nenhum bot criado
+            // Passo 1: Nenhum bot criado. Ação mais básica.
             if (botKeys.length === 0) {
                 const btnNew = document.getElementById('btn-new-bot');
                 if (btnNew) btnNew.classList.add('guide-highlight');
-                return;
+                return; // Encerra a função aqui.
             }
 
-            // Passo 2: Bot criado, mas não conectado (Aguardando QR ou Inativo)
+            // Passo 2: Ação de maior prioridade: Conectar um bot.
+            // Varre todos os bots procurando por um que precise de conexão.
             for (const key of botKeys) {
                 const bot = botsData[key];
-                if (bot.status !== 'Online' && !bot.status.includes('Iniciando')) {
-                    // Tenta achar o botão de iniciar ou QR code
+                // Se o status indica que está aguardando QR Code ou Pareamento.
+                if (bot.status.includes('Aguardando')) {
                     const card = document.getElementById(`bot-${key}`);
                     if (card) {
-                        // Se estiver aguardando QR, destaca a área do QR ou botão de conectar
-                        if (bot.status.includes('Aguardando')) {
-                            const btnUseCode = card.querySelector('.btn-use-code');
-                            if (btnUseCode) {
-                                btnUseCode.classList.add('guide-highlight');
-                                return;
-                            }
-                        }
-                        // Se estiver desligado, destaca o botão de iniciar
-                        const btnStart = card.querySelector('.btn-act-start');
-                        if (btnStart) {
-                            btnStart.classList.add('guide-highlight');
-                            return;
+                        // Prioriza o botão de conectar com número, pois é mais simples.
+                        const btnUseCode = card.querySelector('.btn-use-code');
+                        if (btnUseCode) {
+                            btnUseCode.classList.add('guide-highlight');
+                            return; // Encontrou a ação mais importante, encerra a função.
                         }
                     }
                 }
             }
 
-            // Passo 3: Bot de Grupo Online, mas sem grupos
+            // Passo 3: Segunda prioridade: Iniciar um bot que está desligado.
+            // Isso só roda se o loop anterior não encontrou nenhum bot "Aguardando".
             for (const key of botKeys) {
                 const bot = botsData[key];
+                // Verifica se o bot não está online, nem iniciando, nem aguardando conexão.
+                if (bot.status !== 'Online' && !bot.status.includes('Iniciando') && !bot.status.includes('Aguardando')) {
+                    const card = document.getElementById(`bot-${key}`);
+                    if (card) {
+                        const btnStart = card.querySelector('.btn-act-start');
+                        if (btnStart) {
+                            btnStart.classList.add('guide-highlight');
+                            return; // Encontrou a próxima ação mais importante, encerra.
+                        }
+                    }
+                }
+            }
+
+            // Passo 4: Terceira prioridade: Ativar o primeiro grupo de um bot.
+            // Isso só roda se TODOS os bots já estiverem online ou iniciando.
+            for (const key of botKeys) {
+                const bot = botsData[key];
+                // Verifica se é um bot de grupo, se está online e se não tem grupos.
                 if (bot.botType === 'group' && bot.status === 'Online') {
                     const groups = groupsData[key] || [];
                     if (groups.length === 0) {
@@ -3028,12 +3160,14 @@
                             const btnLink = card.querySelector('.btn-act-link');
                             if (btnLink) {
                                 btnLink.classList.add('guide-highlight');
-                                return;
+                                return; // Encontrou a próxima ação, encerra.
                             }
                         }
                     }
                 }
             }
+            
+            // Se nenhum dos loops anteriores retornou, significa que não há nenhuma ação de onboarding pendente.
         }
     </script>
 </body>
