@@ -1,3 +1,5 @@
+//index.js
+
 const {
     default: makeWASocket,
     useMultiFileAuthState,
@@ -729,7 +731,7 @@ if (platform === 'telegram') {
         const sock = makeWASocket({
             version, 
             logger, 
-            printQRInTerminal: !phoneNumberArg,
+            // printQRInTerminal removido para evitar erro de deprecation
             auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
             syncFullHistory: false, 
             markOnlineOnConnect: true,
