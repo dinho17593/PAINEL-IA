@@ -44,7 +44,16 @@
         --radius-lg: 24px;
     }
 
-    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    * { 
+        box-sizing: border-box; 
+        outline: none; 
+        -webkit-tap-highlight-color: transparent; 
+        -webkit-touch-callout: none; /* Bloqueia o menu de toque longo no iOS */
+        -webkit-user-select: none;   /* Safari */
+        -moz-user-select: none;      /* Firefox */
+        -ms-user-select: none;       /* IE/Edge */
+        user-select: none;           /* Padrão */
+    }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-body); }
     ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
@@ -73,6 +82,10 @@
     input, textarea, select { 
         width: 100%; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); 
         border-radius: var(--radius-md); color: var(--text-main); font-size: 0.9rem; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s ease;
+        -webkit-user-select: auto; /* Devolve a permissão para digitar e selecionar texto nos inputs */
+        -moz-user-select: auto;
+        -ms-user-select: auto;
+        user-select: auto;
     }
     input:focus, textarea:focus, select:focus { border-color: var(--primary); background: rgba(255,255,255,0.05); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
     input::placeholder { color: #52525b; }
@@ -363,6 +376,37 @@
             </p>
         </div>
 
+        <!-- DASHBOARD FINANCEIRO (CARDS) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <div class="form-section" style="margin-bottom: 0; display: flex; align-items: center; gap: 15px; border-left: 4px solid var(--green);">
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 12px; color: var(--green); font-size: 1.5rem;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Recebido (Pago)</p>
+                    <h3 style="margin: 5px 0 0 0; font-size: 1.5rem; color: var(--text-main);" id="dash-recebido">R$ 0,00</h3>
+                </div>
+            </div>
+            <div class="form-section" style="margin-bottom: 0; display: flex; align-items: center; gap: 15px; border-left: 4px solid var(--yellow);">
+                <div style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 12px; color: var(--yellow); font-size: 1.5rem;">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div>
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">A Receber (Pendente)</p>
+                    <h3 style="margin: 5px 0 0 0; font-size: 1.5rem; color: var(--text-main);" id="dash-pendente">R$ 0,00</h3>
+                </div>
+            </div>
+            <div class="form-section" style="margin-bottom: 0; display: flex; align-items: center; gap: 15px; border-left: 4px solid var(--primary);">
+                <div style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 12px; color: var(--primary); font-size: 1.5rem;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total de Clientes</p>
+                    <h3 style="margin: 5px 0 0 0; font-size: 1.5rem; color: var(--text-main);" id="dash-clientes">0</h3>
+                </div>
+            </div>
+        </div>
+
         <!-- Seção de Configuração de Pagamento (Para todos os usuários) -->
         <div class="form-section" style="border-color: var(--cyan);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -526,7 +570,7 @@
                     <div class="input-group">
                         <label class="input-label">Número do WhatsApp</label>
                         <span class="help-text">Se não houver código do país (55), ele será adicionado automaticamente.</span>
-                        <input type="number" id="client-number" placeholder="11999998888">
+                        <input type="text" inputmode="numeric" id="client-number" placeholder="Ex: 11999998888">
                     </div>
                     <button type="submit" class="btn-primary">Salvar Cliente</button>
                 </form>
@@ -602,6 +646,10 @@
                     <div class="input-group hidden" id="campaign-value-group">
                         <label class="input-label">Valor (R$)</label>
                         <input type="number" id="campaign-value" step="0.01" placeholder="29.90">
+                        <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="campaign-generate-card" checked style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+                            <label for="campaign-generate-card" style="font-size: 0.85rem; cursor: pointer; color: var(--text-muted);">Gerar link de Cartão e Boleto</label>
+                        </div>
                     </div>
                 </div>
 
@@ -626,7 +674,7 @@
                     <span class="help-text">Para evitar problemas com meses curtos, escolha um dia entre 1 e 28.</span>
                 </div>
 
-                <div class="input-group">
+                <div class="input-group" id="campaign-bot-group">
                     <label class="input-label">Enviar usando o Robô:</label>
                     <select id="campaign-bot-selector" required>
                         <option value="">Carregando robôs...</option>
@@ -644,7 +692,41 @@
             </form>
         </div>
     </div>
+<!-- Modal Cobrança Avulsa -->
+    <div id="quick-charge-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <h3 style="margin:0; font-size: 1.1rem; color: var(--green);"><i class="fas fa-bolt"></i> Cobrança Rápida</h3>
+                <i class="fas fa-times" onclick="document.getElementById('quick-charge-modal').style.display='none'" style="padding:10px; cursor:pointer;"></i>
+            </div>
+            <form id="quick-charge-form">
+                <input type="hidden" id="qc-client-id">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Cobrando: <strong id="qc-client-name" style="color: var(--text-main);"></strong></p>
+                
+                <div class="input-group">
+                    <label class="input-label">Valor (R$)</label>
+                    <input type="number" id="qc-value" step="0.01" required placeholder="Ex: 50.00">
+                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="qc-generate-card" checked style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+                        <label for="qc-generate-card" style="font-size: 0.85rem; cursor: pointer; color: var(--text-muted);">Gerar link de Cartão e Boleto</label>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Mensagem</label>
+                    <span class="help-text">Use <strong>{saudacao}</strong>, <strong>{nome}</strong> e <strong>{valor}</strong>.</span>
+                    <textarea id="qc-message" rows="4" required>{saudacao} {nome}! Segue a cobrança no valor de R$ {valor} referente ao nosso serviço. Os dados para pagamento estão logo abaixo. Qualquer dúvida estou à disposição!</textarea>
+                </div>
 
+                <div class="input-group">
+                    <label class="input-label">Robô de Envio</label>
+                    <select id="qc-bot-selector" required></select>
+                </div>
+
+                <button type="submit" class="btn-primary" style="background: var(--green); color: #000; border: none;">Enviar Cobrança Agora</button>
+            </form>
+        </div>
+    </div>
     <!-- Modal Alerta Sem Robô -->
     <div id="no-bot-modal" class="modal-overlay">
         <div class="modal-content" style="text-align: center; max-width: 400px;">
@@ -762,7 +844,8 @@
 
         // Lógica de Normalização de Número (Adiciona 55 se necessário)
         function normalizeNumber(num) {
-            let cleanNum = num.replace(/\D/g, '');
+            if (!num) return '';
+            let cleanNum = String(num).replace(/\D/g, '');
             // Se tiver 10 ou 11 dígitos (DDD + Número), adiciona 55
             if (cleanNum.length >= 10 && cleanNum.length <= 11) {
                 return '55' + cleanNum;
@@ -870,7 +953,10 @@
                     <td class="col-check"><input type="checkbox" class="row-selector client-row" value="${client.id}" onchange="updateBulkButton('client-row')"></td>
                     <td>${client.name}</td>
                     <td>${client.number}</td>
-                    <td class="col-actions"><i class="fas fa-trash action-icon delete" onclick="deleteClient('${client.id}')"></i></td>
+                    <td class="col-actions" style="white-space: nowrap;">
+                        <i class="fas fa-file-invoice-dollar action-icon" style="color: var(--green);" title="Cobrança Avulsa" onclick="openQuickCharge('${client.id}', '${client.name}')"></i>
+                        <i class="fas fa-trash action-icon delete" title="Excluir" onclick="deleteClient('${client.id}')"></i>
+                    </td>
                 `;
                 tableBody.appendChild(tr);
 
@@ -904,6 +990,8 @@
                     statusTag = '<span class="tag tag-green">Ativa</span>';
                 } else if (c.status === 'sent') {
                     statusTag = '<span class="tag tag-blue">Enviada</span>';
+                } else if (c.status === 'failed') {
+                    statusTag = '<span class="tag tag-red">Falhou</span>';
                 } else {
                     statusTag = `<span class="tag tag-yellow">${c.status}</span>`;
                 }
@@ -974,6 +1062,7 @@
 
         function renderBotSelector(bots) {
             const selector = document.getElementById('campaign-bot-selector');
+            const groupDiv = document.getElementById('campaign-bot-group');
             selector.innerHTML = '<option value="">Selecione um Robô</option>';
             
             // Filtra apenas para garantir que seja WhatsApp
@@ -982,6 +1071,7 @@
             
             if (availableBots.length === 0) {
                 selector.innerHTML = '<option value="">Nenhum robô disponível (WhatsApp)</option>';
+                if(groupDiv) groupDiv.style.display = 'block';
                 return;
             }
             
@@ -994,9 +1084,12 @@
                 selector.appendChild(option);
             });
 
-            // SELEÇÃO AUTOMÁTICA: Se houver apenas 1 robô, seleciona ele
+            // SELEÇÃO AUTOMÁTICA E OCULTAÇÃO: Se houver apenas 1 robô, seleciona e oculta
             if (availableBots.length === 1) {
                 selector.value = availableBots[0].sessionName;
+                if(groupDiv) groupDiv.style.display = 'none';
+            } else {
+                if(groupDiv) groupDiv.style.display = 'block';
             }
         }
 
@@ -1012,7 +1105,12 @@
             number = normalizeNumber(number);
 
             if(!name || !number) {
-                showFeedback(false, 'Preencha nome e número.');
+                showFeedback(false, 'Preencha o nome e o número.');
+                return;
+            }
+            
+            if(number.length < 12 || number.length > 15) {
+                showFeedback(false, 'Número inválido. Verifique se o DDD está correto.');
                 return;
             }
 
@@ -1148,7 +1246,8 @@
                 scheduleDay: document.getElementById('campaign-schedule-day').value,
                 scheduleDate: document.getElementById('campaign-schedule-date').value, // Novo campo
                 targetBot: document.getElementById('campaign-bot-selector').value,
-                clients: selectedClients
+                clients: selectedClients,
+                generateCardLink: document.getElementById('campaign-generate-card').checked
             };
 
             // ===== AJUSTE PRINCIPAL APLICADO AQUI =====
@@ -1176,7 +1275,57 @@
                 socket.emit('campaigns:create', campaignData);
             }
         });
+function openQuickCharge(clientId, clientName) {
+            if (!hasToken) {
+                showFeedback(false, 'Configure seu Token do Mercado Pago primeiro!');
+                return;
+            }
+            if (availableBotsList.length === 0) {
+                document.getElementById('no-bot-modal').style.display = 'flex';
+                return;
+            }
+            
+            document.getElementById('qc-client-id').value = clientId;
+            document.getElementById('qc-client-name').innerText = clientName;
+            document.getElementById('qc-value').value = '';
+            
+            const qcCardCheckbox = document.getElementById('qc-generate-card');
+            if (qcCardCheckbox) qcCardCheckbox.checked = true;
+            
+            const botSelect = document.getElementById('qc-bot-selector');
+            botSelect.innerHTML = '';
+            availableBotsList.forEach(bot => {
+                botSelect.innerHTML += `<option value="${bot.sessionName}">${bot.publicName || bot.sessionName}</option>`;
+            });
+            
+            document.getElementById('quick-charge-modal').style.display = 'flex';
+        }
 
+        document.getElementById('quick-charge-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const clientId = document.getElementById('qc-client-id').value;
+            const clientName = document.getElementById('qc-client-name').innerText;
+            const value = document.getElementById('qc-value').value;
+            const message = document.getElementById('qc-message').value;
+            const bot = document.getElementById('qc-bot-selector').value;
+
+            // Cria uma campanha "invisível" que envia agora (Reaproveita o backend perfeitamente)
+            socket.emit('campaigns:create', {
+                name: 'Cobrança Avulsa - ' + clientName,
+                message: message,
+                type: 'cobranca',
+                value: value,
+                scheduleType: 'now',
+                scheduleDay: '1',
+                scheduleDate: '',
+                targetBot: bot,
+                clients:[clientId],
+                generateCardLink: document.getElementById('qc-generate-card').checked
+            });
+
+            document.getElementById('quick-charge-modal').style.display = 'none';
+            showFeedback(true, 'Cobrança avulsa gerada e enviando...');
+        });
         function deleteClient(id) {
             if (confirm('Tem certeza que deseja excluir este cliente?')) {
                 socket.emit('clients:delete', { id });
@@ -1279,6 +1428,8 @@
 
         socket.on('clients:list', (clients) => {
             clientCount = clients.length;
+            const elClientes = document.getElementById('dash-clientes');
+            if(elClientes) elClientes.innerText = clientCount; // Atualiza Dashboard
             renderClients(clients);
             updateOnboardingSteps();
         });
@@ -1291,6 +1442,20 @@
 
         socket.on('payments:list', (payments) => {
             allPayments = payments; // Salva localmente
+            
+            // --- ATUALIZA O DASHBOARD FINANCEIRO ---
+            let totalRecebido = 0;
+            let totalPendente = 0;
+            payments.forEach(p => {
+                if (p.status === 'approved') totalRecebido += parseFloat(p.amount || 0);
+                if (p.status === 'pending') totalPendente += parseFloat(p.amount || 0);
+            });
+            const elRecebido = document.getElementById('dash-recebido');
+            const elPendente = document.getElementById('dash-pendente');
+            if(elRecebido) elRecebido.innerText = totalRecebido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            if(elPendente) elPendente.innerText = totalPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            // ---------------------------------------
+
             // Renderiza a aba ativa (padrão: approved)
             const activeTab = document.querySelector('#history-modal .tab-btn.active');
             if (activeTab && activeTab.innerText.includes('Pendentes')) {
@@ -1335,6 +1500,10 @@
             document.getElementById('campaign-message').value = campaign.message;
             document.getElementById('campaign-type').value = campaign.type;
             document.getElementById('campaign-value').value = campaign.value || '';
+            
+            const cardCheckbox = document.getElementById('campaign-generate-card');
+            if (cardCheckbox) cardCheckbox.checked = campaign.generateCardLink !== false;
+
             document.getElementById('campaign-schedule-type').value = campaign.scheduleType;
             document.getElementById('campaign-schedule-day').value = campaign.scheduleDay || '1';
             document.getElementById('campaign-schedule-date').value = campaign.scheduleDate || ''; // Preenche data
