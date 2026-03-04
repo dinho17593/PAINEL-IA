@@ -1,7 +1,11 @@
-const CACHE_NAME = 'zappbot-v2';
-const ASSETS_TO_CACHE = [
+//sw.js
+
+
+const CACHE_NAME = 'zappbot-v4';
+const ASSETS_TO_CACHE =[
   '/',
   '/index.html',
+   '/clients.html',
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png',
@@ -79,3 +83,45 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+// ============================================================================
+// NOVO: Lida com o clique na notificação no celular/desktop
+// ============================================================================
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close(); // Fecha a notificação ao ser tocada
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Se já tiver uma aba do painel aberta, foca nela
+      for (let client of windowClients) {
+        if (client.url.includes('/') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Se o app estiver fechado, abre o painel
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
+// ============================================================================
+// NOVO: Escuta as notificações em segundo plano (Web Push)
+// ============================================================================
+self.addEventListener('push', function(event) {
+  if (event.data) {
+    const data = event.data.json();
+    const options = {
+      body: data.body,
+      icon: data.icon || '/api/logo/192', // Usa a foto do cliente do WhatsApp ou a logo do painel
+      vibrate:[200, 100, 200],
+      data: { url: '/' } 
+    };
+    
+    event.waitUntil(
+      self.registration.showNotification(data.title, options)
+    );
+  }
+});
+
+
