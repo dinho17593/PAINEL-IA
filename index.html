@@ -1,8 +1,9 @@
 
-<!DOCTYPE html>
-<html lang="pt-BR">
+
+<html lang="pt-BR" translate="no">
 <head>
     <meta charset="UTF-8">
+    <meta name="google" content="notranslate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>zappbot</title>
     
@@ -12,9 +13,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="zappbot">
     
-    <link rel="apple-touch-icon" href="icon-192x192.png">
-    <link rel="icon" type="image/png" href="icon-192x192.png">
-    <link rel="shortcut icon" href="icon-192x192.png" type="image/x-icon">
+    <link rel="apple-touch-icon" href="/api/logo/192">
+    <link rel="icon" type="image/png" href="/api/logo/192">
+    <link rel="shortcut icon" href="/api/logo/192" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
 
     <script>
@@ -65,7 +66,16 @@
         --radius-lg: 24px;
     }
 
-    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    * { 
+        box-sizing: border-box; 
+        outline: none; 
+        -webkit-tap-highlight-color: transparent; 
+        -webkit-touch-callout: none; /* Bloqueia o menu de toque longo no iOS */
+        -webkit-user-select: none;   /* Safari */
+        -moz-user-select: none;      /* Firefox */
+        -ms-user-select: none;       /* IE/Edge */
+        user-select: none;           /* Padrão */
+    }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-body); }
     ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
@@ -113,6 +123,10 @@
     input, textarea, select { 
         width: 100%; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); 
         border-radius: var(--radius-md); color: var(--text-main); font-size: 0.9rem; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s ease;
+        -webkit-user-select: auto; /* Devolve a permissão para digitar e selecionar texto nos inputs */
+        -moz-user-select: auto;
+        -ms-user-select: auto;
+        user-select: auto;
     }
     input:focus, textarea:focus, select:focus { border-color: var(--primary); background: rgba(255,255,255,0.05); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
     input::placeholder { color: #52525b; }
@@ -348,6 +362,7 @@
     .modal-content-chat {
         width: 100%;
         height: 100%;
+        height: 100dvh; /* Força o modal a respeitar a tela exata, com ou sem teclado */
         max-width: none;
         max-height: none;
         border-radius: 0;
@@ -358,7 +373,15 @@
         position: fixed;
         top: 0;
         left: 0;
+        right: 0;
+        bottom: 0;
         margin: 0;
+        background: var(--bg-body); /* Garante que não fique transparente por trás */
+        z-index: 999999;
+    }
+
+    .chat-header, .chat-fixed-greeting, .chat-input-area {
+        flex-shrink: 0; /* IMPEDE que o topo e o rodapé sejam esmagados ou rolem */
     }
 
     .chat-header {
@@ -371,8 +394,9 @@
     }
 
     .chat-messages {
-        flex: 1;
+        flex: 1 1 auto;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* Rolagem nativa suave no iOS */
         padding: 20px;
         display: flex;
         flex-direction: column;
@@ -655,12 +679,181 @@
     .legal-content p { margin-bottom: 10px; }
     .legal-content ul { padding-left: 20px; margin-bottom: 15px; }
     .legal-content li { margin-bottom: 5px; }
+    /* --- TABS E AUTO RESPONDER --- */
+    .tabs-header { 
+        display: flex; 
+        gap: 5px; 
+        margin-bottom: 20px; 
+        border-bottom: 2px solid rgba(255, 255, 255, 0.05); 
+    }
+    .tab-btn { 
+        background: transparent; 
+        border: none; 
+        border-bottom: 2px solid transparent; 
+        color: var(--text-muted); 
+        font-weight: 600; 
+        cursor: pointer; 
+        padding: 10px 20px; 
+        border-radius: 8px 8px 0 0; 
+        transition: all 0.2s ease; 
+        font-size: 0.9rem; 
+        margin-bottom: -2px; /* Puxa para cima da borda inferior */
+    }
+    .tab-btn:hover {
+        color: var(--text-main);
+        background: rgba(255,255,255,0.02);
+    }
+    .tab-btn.active { 
+        color: var(--primary); 
+        border-bottom: 2px solid var(--primary); 
+        background: rgba(99, 102, 241, 0.05); 
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: slideDown 0.3s ease; }
+    
+    .trigger-item { background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 12px; position: relative; }
+    .trigger-item .remove-btn { position: absolute; top: 10px; right: 10px; color: var(--red); cursor: pointer; background: rgba(244, 63, 94, 0.1); border: none; width: 28px; height: 28px; border-radius: 6px; transition: 0.2s; }
+    .trigger-item .remove-btn:hover { background: var(--red); color: white; }
+    .trigger-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px; }
+
+    /* --- CARDS DE USUÁRIOS --- */
+    .user-card-item {
+        background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+        border-radius: 10px; padding: 12px 15px; margin-bottom: 10px;
+        display: flex; justify-content: space-between; align-items: center;
+        transition: all 0.3s ease; cursor: pointer;
+    }
+    .user-card-item:hover {
+        background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1);
+        transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .user-avatar-initial {
+        width: 38px; height: 38px; border-radius: 50%; /* 50% deixa 100% redondo */
+        background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+        color: white; display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; font-weight: 800; text-transform: uppercase; flex-shrink: 0;
+    }
+    .user-info-col { flex: 1; margin: 0 12px; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+    .user-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .user-name-text { font-weight: 700; font-size: 0.85rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-hierarchy { font-size: 0.65rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+    .user-stats-row { font-size: 0.7rem; color: #a1a1aa; display: flex; gap: 10px; margin-top: 2px; }
+    .user-stats-row strong { color: var(--text-main); }
+    .user-actions-col { display: flex; align-items: center; gap: 10px; }
+    
+    .search-user-bar {
+        display: flex; align-items: center; background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border); border-radius: 12px; padding: 0 15px; margin-bottom: 20px;
+    }
+    .search-user-bar i { color: var(--text-muted); }
+    .search-user-bar input { border: none; background: transparent; padding: 12px 10px; box-shadow: none !important; }
+
+    /* --- INÍCIO: ESTILOS TELA CHEIA E EDITOR DE REGRAS --- */
+    .modal-large {
+        width: 100%; height: 100%; max-width: none; max-height: none; border-radius: 0;
+        display: flex; flex-direction: column; padding: 0;
+    }
+    .modal-large .modal-header {
+        padding: 15px 20px; border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: center;
+        background: rgba(255,255,255,0.02);
+    }
+    .modal-large .modal-body {
+        padding: 20px; overflow-y: auto; flex: 1;
+    }
+    @media (min-width: 768px) {
+        .modal-large { width: 90%; max-width: 700px; height: 90vh; border-radius: 20px; }
+    }
+
+    .rule-summary-item {
+        background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+        padding: 16px; border-radius: 12px; margin-bottom: 12px;
+        display: flex; justify-content: space-between; align-items: center; 
+        cursor: pointer; transition: all 0.2s ease;
+    }
+    .rule-summary-item:hover {
+        border-color: var(--primary); background: rgba(255,255,255,0.05); transform: translateY(-2px);
+    }
+    .rule-summary-content { flex: 1; overflow: hidden; padding-right: 15px; }
+    .rule-badge {
+        font-size: 0.65rem; background: var(--primary); color: white;
+        padding: 3px 8px; border-radius: 20px; font-weight: 600; text-transform: uppercase;
+    }
+    .rule-badge.all { background: var(--yellow); color: #000; }
+    .rule-title {
+        display: block; font-weight: 700; color: var(--text-main); 
+        margin: 8px 0 4px 0; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .rule-desc {
+        color: var(--text-muted); font-size: 0.85rem; display: -webkit-box;
+        -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;
+    }
+    /* --- FIM: ESTILOS TELA CHEIA E EDITOR DE REGRAS --- */
+/* --- INÍCIO: ESTILOS LIVE CHAT (WHATSAPP WEB CLONE) --- */
+    .livechat-modal { padding: 0 !important; max-width: 1000px !important; height: 85vh !important; display: flex; flex-direction: row !important; background: #111b21 !important; border: none !important; overflow: hidden; }
+    .livechat-sidebar { width: 30%; border-right: 1px solid #222d34; display: flex; flex-direction: column; background: #111b21; }
+    .livechat-header { background: #202c33; padding: 10px 16px; height: 60px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222d34; color: #e9edef; font-weight: 600; }
+    .livechat-search { padding: 8px 12px; background: #111b21; border-bottom: 1px solid #222d34; }
+    .livechat-search input { background: #202c33; border: none; border-radius: 8px; color: #e9edef; padding: 8px 12px; height: 35px; font-size: 0.9rem; }
+    .livechat-contacts { flex: 1; overflow-y: auto; }
+    .livechat-contact { display: flex; align-items: center; padding: 12px; cursor: pointer; border-bottom: 1px solid #202c33; transition: 0.2s; }
+    .livechat-contact:hover, .livechat-contact.active { background: #2a3942; }
+    .livechat-avatar { width: 40px; height: 40px; border-radius: 50%; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
+    .livechat-contact-info { flex: 1; overflow: hidden; }
+    .livechat-contact-name { color: #e9edef; font-weight: 500; font-size: 0.95rem; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; }
+    .livechat-contact-time { font-size: 0.7rem; color: #8696a0; font-weight: normal; }
+    .livechat-contact-last { color: #8696a0; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .livechat-unread { background: #00a884; color: #111b21; font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 10px; float: right; }
+    
+    .livechat-main { width: 70%; display: flex; flex-direction: column; background: #0b141a; position: relative; }
+    .livechat-main::before { content: ''; position: absolute; top:0; left:0; right:0; bottom:0; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); opacity: 0.05; z-index: 0; pointer-events: none; }
+    .livechat-messages { flex: 1; overflow-y: auto; padding: 20px 5%; display: flex; flex-direction: column; gap: 8px; z-index: 1; }
+    .livechat-bubble { max-width: 65%; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; position: relative; color: #e9edef; word-wrap: break-word; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); }
+    .livechat-bubble.received { align-self: flex-start; background: #202c33; border-top-left-radius: 0; }
+    .livechat-bubble.sent { align-self: flex-end; background: #005c4b; border-top-right-radius: 0; }
+    .livechat-time { font-size: 0.65rem; color: rgba(255,255,255,0.6); float: right; margin-top: 5px; margin-left: 10px; }
+    
+    .livechat-input-area { background: #202c33; padding: 10px 16px; display: flex; align-items: center; gap: 10px; z-index: 1; }
+    .livechat-input-area input { flex: 1; background: #2a3942; border: none; border-radius: 8px; color: #e9edef; padding: 12px; height: 42px; font-size: 0.95rem; }
+    .livechat-btn-send { background: transparent; color: #8696a0; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px 10px; transition: 0.2s; }
+    .livechat-btn-send:hover { color: #e9edef; }
+    .livechat-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #8696a0; z-index: 1; text-align: center; }
+    .livechat-empty i { font-size: 4rem; margin-bottom: 20px; opacity: 0.5; }
+    
+    .lc-back-btn { display: none; margin-right: 15px; font-size: 1.3rem; color: #e9edef; cursor: pointer; }
+    
+    @media (max-width: 768px) {
+        .livechat-modal { 
+            flex-direction: column !important; 
+            width: 100% !important;
+            height: 100% !important;
+            height: 100dvh !important;
+            max-width: none !important;
+            max-height: none !important;
+            border-radius: 0 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            margin: 0 !important;
+            background: #111b21 !important;
+        }
+        .livechat-sidebar { width: 100%; border-right: none; flex: 1; display: flex; flex-direction: column; }
+        .livechat-main { display: none; width: 100%; flex: 1; height: 100dvh; }
+        .lc-back-btn { display: block; padding: 5px 15px 5px 0; }
+        
+        /* Quando um chat é aberto no mobile, oculta a lista e exibe o chat */
+        .livechat-modal.mobile-chat-active .livechat-sidebar { display: none !important; }
+        .livechat-modal.mobile-chat-active .livechat-main { display: flex !important; }
+    }
+    /* --- FIM: ESTILOS LIVE CHAT --- */
 </style>
 </head>
 <body>
 
     <div id="pwa-update-bar">
-        <span>Nova versão disponível!</span>
+        <span id="pwa-update-text">Nova versão disponível!</span>
         <button id="pwa-update-btn">ATUALIZAR AGORA</button>
     </div>
 
@@ -678,6 +871,9 @@
             </button>
             <button class="sidebar-btn" onclick="window.location.href='/clients.html'">
                 <i class="fas fa-users-cog"></i> Gestor de Cobranças
+            </button>
+            <button class="sidebar-btn hidden" id="btn-nav-users" onclick="navToUsers()">
+                <i class="fas fa-users"></i> Gerenciar Usuários
             </button>
             <button class="sidebar-btn" id="btn-nav-admin" onclick="navToAdminSettings()">
                 <i class="fas fa-cog"></i> Configurações do Sistema
@@ -781,6 +977,9 @@
                         <span><i class="fas fa-users-cog"></i> Acessar Gestor de Cobranças</span>
                         <i class="fas fa-chevron-right"></i>
                     </button>
+                    <button id="btn-resell-empty" onclick="openResellModal()" class="btn-primary hidden" style="margin-top: 15px; background: linear-gradient(135deg, var(--purple-dark) 0%, var(--primary) 100%); border: 1px solid var(--primary); animation: pulse-guide 2s infinite;">
+                        <i class="fas fa-rocket"></i> Quero me tornar um revendedor
+                    </button>
                 </div>
 
                 <!-- FOOTER PROFISSIONAL -->
@@ -818,23 +1017,43 @@
                     </div>
                 </div>
 
+                <!-- NOVA SEÇÃO DE ATUALIZAÇÃO FORÇADA -->
+                <div id="admin-update-section" class="form-section hidden" style="border-color: var(--green);">
+                    <h4 style="color: var(--green); margin-top: 0; margin-bottom: 12px;"><i class="fas fa-sync-alt"></i> Forçar Atualização Global</h4>
+                    <p class="help-text">Clique aqui após fazer alterações no código. Escreva abaixo o que mudou para avisar os usuários (isso fará a barra de atualização e uma notificação aparecer para todos online).</p>
+                    
+                    <div class="input-group" style="margin-top: 15px;">
+                        <textarea id="admin-update-message" rows="2" placeholder="Ex: Nova versão disponível! Adicionamos a função de revenda e corrigimos bugs." style="border-color: rgba(16, 185, 129, 0.3);"></textarea>
+                    </div>
+
+                    <button onclick="forceGlobalUpdate()" class="btn-primary" style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--green); color: var(--green);">
+                        <i class="fas fa-paper-plane"></i> Enviar Aviso de Atualização para Todos
+                    </button>
+                </div>
+
+                <div class="form-section" style="border-color: var(--blue);">
+                    <h4 style="color: var(--blue); margin-top: 0; margin-bottom: 12px;"><i class="fas fa-bell"></i> Notificações do Navegador</h4>
+                    <p class="help-text">Receba alertas no computador ou celular quando seus robôs privados receberem novas mensagens.</p>
+                    
+                    <div class="checkbox-group" style="margin-top: 10px;">
+                        <input type="checkbox" id="toggle-browser-notifications" onchange="toggleNotifications(this)">
+                        <div>
+                            <label for="toggle-browser-notifications">Ativar Notificações de Mensagens</label>
+                            <div class="help-text">Requer permissão do navegador.</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="admin-only-content" class="hidden">
-                    <div class="form-section" style="border-color: var(--purple-dark);">
+                    <div class="form-section" id="logos-section" style="border-color: var(--purple-dark);">
                         <h4 style="color: #e9d5ff; margin-top: 0; margin-bottom: 12px;"><i class="fas fa-images"></i> Logos do Sistema</h4>
                         <p class="help-text">Atualize os ícones do sistema. As imagens serão renomeadas automaticamente.</p>
                         
                         <form id="upload-icons-form" style="display: flex; flex-direction: column; gap: 15px;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                                <div class="icon-preview-container">
-                                    <label class="input-label">Ícone Pequeno (192x192)</label>
-                                    <img id="preview-icon-small" src="/icon-192x192.png" class="icon-preview-img">
-                                    <input type="file" id="input-icon-small" name="iconSmall" accept="image/png" required>
-                                </div>
-                                <div class="icon-preview-container">
-                                    <label class="input-label">Ícone Grande (512x512)</label>
-                                    <img id="preview-icon-large" src="/icon-512x512.png" class="icon-preview-img">
-                                    <input type="file" id="input-icon-large" name="iconLarge" accept="image/png" required>
-                                </div>
+                            <div class="icon-preview-container" style="max-width: 300px; margin: 0 auto;">
+                                <label class="input-label">Nova Logo (Recomendado 512x512)</label>
+                                <img id="preview-icon" src="/api/logo/512" class="icon-preview-img" style="width: 100px; height: 100px;">
+                                <input type="file" id="input-icon" name="icon" accept="image/png" required>
                             </div>
                             <button type="submit" class="btn-primary" style="background: var(--purple-dark); color: #fff;">
                                 <i class="fas fa-upload"></i> Atualizar Ícones
@@ -876,147 +1095,330 @@
                         </form>
                     </div>
 
-                    <div class="form-section">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h4 style="margin: 0;">Gerenciar Usuários</h4>
-                        </div>
-                        <ul id="users-list" style="list-style: none; padding: 0;"></ul>
                     </div>
+            </div>
+
+           <!-- NOVA TELA DE GERENCIAR USUÁRIOS -->
+            <div id="admin-users-view" class="hidden">
+                <div id="view-header-users" style="margin: 15px 0;">
+                    <h2 style="font-size: 1.1rem; margin: 0;">Gerenciar Usuários</h2>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Administre os clientes da plataforma.</p>
+                </div>
+
+                <!-- CAIXA DO LINK DE REVENDEDOR -->
+                <div id="reseller-link-container" class="form-section" style="border-color: var(--primary); padding: 15px; margin-bottom: 20px;">
+                    <label class="input-label" style="color: var(--primary);"><i class="fas fa-link"></i> Seu Link de Indicação (Revenda)</label>
+                    <p class="help-text">Envie este link para seus clientes se cadastrarem. Eles aparecerão na sua lista abaixo e pagarão direto na sua conta.</p>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="my-ref-link" readonly style="background: rgba(255,255,255,0.05); color: var(--text-main); margin: 0;">
+                        <button class="btn-primary" onclick="copyRefLink()" style="width: auto; padding: 0 20px;"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+
+                <div class="search-user-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-user-input" placeholder="Buscar usuário por nome..." onkeyup="filterAdminUsers(this.value)">
+                </div>
+
+                <div class="tabs-header" style="margin-bottom: 20px;">
+                    <button type="button" class="tab-btn active" onclick="switchUserTab('active', event)">Ativos</button>
+                    <button type="button" class="tab-btn" onclick="switchUserTab('pending', event)">Pendentes</button>
+                    <button type="button" class="tab-btn" onclick="switchUserTab('inactive', event)">Inativos</button>
+                    <button type="button" class="tab-btn" onclick="switchUserTab('empty', event)">Sem Robôs</button>
+                </div>
+
+                <div id="users-tab-active" class="tab-content active">
+                    <ul id="users-list-active" style="list-style: none; padding: 0; margin: 0;"></ul>
+                </div>
+                <div id="users-tab-pending" class="tab-content">
+                    <ul id="users-list-pending" style="list-style: none; padding: 0; margin: 0;"></ul>
+                </div>
+                <div id="users-tab-inactive" class="tab-content">
+                    <ul id="users-list-inactive" style="list-style: none; padding: 0; margin: 0;"></ul>
+                </div>
+                <div id="users-tab-empty" class="tab-content">
+                    <ul id="users-list-empty" style="list-style: none; padding: 0; margin: 0;"></ul>
                 </div>
             </div>
 
         </div>
     </div>
 
+   <!-- INÍCIO DO MODAL CRIAR ROBÔ -->
     <div id="create-bot-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <h3 style="margin:0;"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> Criar Novo Robô</h3>
-                <i class="fas fa-times" onclick="closeCreateModal()" style="padding:10px; cursor:pointer;"></i>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 style="margin:0;"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> Criar Robô</h3>
+                <i class="fas fa-times" onclick="closeCreateModal()" style="font-size: 1.2rem; cursor:pointer;"></i>
             </div>
-
-            <div id="create-step-1">
-                <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">Qual será a função deste robô?</p>
-                <div class="type-select-grid">
-                    <div class="type-card" onclick="selectBotType('individual')">
-                        <i class="fas fa-user-shield"></i>
-                        <h4>Atendimento Privado</h4>
-                        <p>Responde clientes no PV (1 a 1).</p>
-                    </div>
-                    <div class="type-card" onclick="selectBotType('group')">
-                        <i class="fas fa-users"></i>
-                        <h4>Gestão de Grupos</h4>
-                        <p>Administra e responde em grupos.</p>
+            
+            <div class="modal-body">
+                <div id="create-step-1">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">Qual será a função deste robô?</p>
+                    <div class="type-select-grid">
+                        <div class="type-card" onclick="selectBotType('individual')">
+                            <i class="fas fa-user-shield"></i>
+                            <h4>Atendimento Privado</h4>
+                            <p>Responde clientes no PV (1 a 1).</p>
+                        </div>
+                        <div class="type-card" onclick="selectBotType('group')">
+                            <i class="fas fa-users"></i>
+                            <h4>Gestão de Grupos</h4>
+                            <p>Administra e responde em grupos.</p>
+                        </div>
                     </div>
                 </div>
+
+                <div id="create-step-2" class="hidden">
+                    <form id="add-bot-form">
+                        <input type="hidden" id="selectedBotType" value="individual">
+                        
+                        <div class="input-group">
+                            <label for="botPlatform" class="input-label">Plataforma</label>
+                            <select id="botPlatform" onchange="togglePlatformFields()">
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="telegram">Telegram</option>
+                            </select>
+                        </div>
+
+                        <div id="telegram-token-group" class="input-group hidden" style="display: none;">
+                            <label for="telegramToken" class="input-label">Token do Bot (Telegram)</label>
+                            <span class="help-text">Cole o token fornecido pelo @BotFather.</span>
+                            <input type="text" id="telegramToken" placeholder="Ex: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                        </div>
+
+                        <div class="input-group" id="sessionName-group">
+                            <label for="sessionName" class="input-label">1. Nome de Identificação</label>
+                            <span class="help-text">Um nome curto para você identificar este bot (ex: Loja_Centro). Sem espaços.</span>
+                            <input type="text" id="sessionName" placeholder="Ex: Bot_Vendas_01">
+                        </div>
+                        
+                        <div id="prompt-container" class="input-group">
+                            <div class="tabs-header">
+                                <button type="button" class="tab-btn active" onclick="switchTab('create', 'prompt', event)"><i class="fas fa-brain"></i> IA (Prompt)</button>
+                                <button type="button" class="tab-btn" onclick="switchTab('create', 'triggers', event)"><i class="fas fa-bolt"></i> Respostas Rápidas</button>
+                            </div>
+                            
+                            <div id="create-tab-prompt" class="tab-content active">
+                                <label for="prompt" class="input-label">2. Personalidade do Robô <span class="example-link" onclick="fillExamplePrompt()">Ver Exemplo</span></label>
+                                <span class="help-text">Explique como ele deve agir. Diga quem ele é, o que vende e como deve responder.</span>
+                                <textarea id="prompt" rows="6" placeholder="Ex: Você é um assistente virtual da Loja X..."></textarea>
+                                
+                                <div style="margin-top: 15px;">
+                                    <label for="create-siteUrl" class="input-label"><i class="fas fa-globe"></i> Aprender do Site (URL) (Opcional)</label>
+                                    <span class="help-text">Insira o link do seu site. A IA usará as informações dele para responder aos clientes.</span>
+                                    <input type="url" id="create-siteUrl" placeholder="Ex: https://www.seusite.com.br">
+                                </div>
+
+                                <div style="margin-top: 15px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px dashed var(--border);">
+                                    <label class="input-label"><i class="fas fa-file-pdf"></i> Base de Conhecimento (PDF/TXT)</label>
+                                    <span class="help-text">Faça upload de um arquivo com informações para a IA usar como base. O processamento inicia automaticamente.</span>
+                                    <input type="file" id="create-knowledge-file" accept=".txt, .pdf" style="margin-bottom: 10px;" onchange="processKnowledgeFile('create')">
+                                <div id="create-knowledge-loading" style="display: none; color: var(--yellow); font-size: 0.85rem; margin-bottom: 10px;"><i class="fas fa-spinner fa-spin"></i> Processando arquivo...</div>
+                                <div id="create-knowledge-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                                </div>
+                            </div>
+
+                            <div id="create-tab-triggers" class="tab-content">
+                                <label class="input-label">Disparos por Palavras-chave</label>
+                                <span class="help-text">Se o cliente digitar a palavra, o bot responde com o texto abaixo e ignora a IA.</span>
+                                <div id="create-triggers-list"></div>
+                                <button type="button" class="btn-use-code" onclick="addTrigger('create')" style="margin-top: 10px;"><i class="fas fa-plus"></i> Adicionar Regra</button>
+                                
+                                <div class="checkbox-group" style="margin-top: 20px;">
+                                    <input type="checkbox" id="create-ai-fallback" checked>
+                                    <div>
+                                        <label for="create-ai-fallback">Permitir IA nas demais mensagens</label>
+                                        <div class="help-text">Se marcado, a IA continuará respondendo o que não for um gatilho. Se desmarcado, a IA é desativada e o bot só usará as regras.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn-primary" onclick="backToBotTypeSelect()" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: auto;">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="submit" class="btn-primary" id="create-bot-btn" style="flex: 1;">Salvar e Criar Robô</button>
+                        </div>
+                    </form>
+                </div>
+            </div> 
+        </div>
+    </div>
+    <!-- FIM DO MODAL CRIAR ROBÔ -->
+
+    <!-- INÍCIO DO MODAL EDITAR ROBÔ (ESTAVA FALTANDO) -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 style="margin:0;"><i class="fas fa-pen" style="color: var(--primary);"></i> Editar Robô</h3>
+                <i class="fas fa-times" onclick="closeEditModal()" style="font-size: 1.2rem; cursor:pointer;"></i>
             </div>
-
-            <div id="create-step-2" class="hidden">
-                <form id="add-bot-form">
-                    <input type="hidden" id="selectedBotType" value="individual">
+            
+            <div class="modal-body">
+                <form id="edit-bot-form">
+                    <input type="hidden" id="edit-sessionName-hidden">
                     
-                    <div class="input-group">
-                        <label for="botPlatform" class="input-label">Plataforma</label>
-                        <select id="botPlatform" onchange="togglePlatformFields()">
-                            <option value="whatsapp">WhatsApp</option>
-                            <option value="telegram">Telegram</option>
-                        </select>
+                    <!-- ABAS -->
+                    <div class="tabs-header" style="margin-bottom: 15px;">
+                        <button type="button" class="tab-btn active" onclick="switchTab('edit', 'prompt', event)"><i class="fas fa-brain"></i> IA (Prompt)</button>
+                        <button type="button" class="tab-btn" onclick="switchTab('edit', 'triggers', event)"><i class="fas fa-bolt"></i> Respostas Rápidas</button>
                     </div>
 
-                    <div id="telegram-token-group" class="input-group hidden" style="display: none;">
-                        <label for="telegramToken" class="input-label">Token do Bot (Telegram)</label>
-                        <span class="help-text">Cole o token fornecido pelo @BotFather.</span>
-                        <input type="text" id="telegramToken" placeholder="Ex: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                    <div id="edit-tab-prompt" class="tab-content active">
+                        <div id="edit-global-settings">
+                            <label class="input-label">Personalidade</label>
+                            <textarea id="edit-prompt" rows="8" style="font-family: sans-serif;"></textarea>
+                            
+                            <div style="margin-top: 15px;">
+                                <label for="edit-siteUrl" class="input-label"><i class="fas fa-globe"></i> Aprender do Site (URL) (Opcional)</label>
+                                <span class="help-text">Se deseja que a IA leia um site, cole a URL aqui. Ela será adicionada à personalidade acima.</span>
+                                <input type="url" id="edit-siteUrl" placeholder="Ex: https://www.seusite.com.br">
+                            </div>
+
+                            <div style="margin-top: 15px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px dashed var(--border);">
+                                <label class="input-label"><i class="fas fa-file-pdf"></i> Base de Conhecimento (PDF/TXT)</label>
+                                <span class="help-text">Faça upload de um arquivo com informações para a IA usar como base. O processamento inicia automaticamente.</span>
+                                <input type="file" id="edit-knowledge-file" accept=".txt, .pdf" style="margin-bottom: 10px;" onchange="processKnowledgeFile('edit')">
+                                <div id="edit-knowledge-loading" style="display: none; color: var(--yellow); font-size: 0.85rem; margin-bottom: 10px;"><i class="fas fa-spinner fa-spin"></i> Processando arquivo...</div>
+                                <div id="edit-knowledge-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                            </div>
+
+                            <div id="edit-silence-wrapper" style="margin-top: 15px;">
+                                <label class="input-label">Silêncio (min) (Opcional)</label>
+                                <input type="number" id="edit-silenceTime" placeholder="0" min="0">
+                            </div>
+                            
+                            <div style="margin-top: 15px;">
+                                <label class="input-label">Número de Notificação (Opcional)</label>
+                                <span class="help-text">Receba um aviso no seu WhatsApp pessoal quando o bot responder. (Ex: 5511999999999)</span>
+                                <input type="text" inputmode="numeric" id="edit-notificationNumber" placeholder="5511999999999">
+                            </div>
+                        </div>
+                        
+                        <div id="edit-group-mode-msg" class="hidden" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                            <i class="fas fa-info-circle"></i> Este bot está em Modo Grupo. As configurações de Personalidade, Nome e Silêncio devem ser feitas individualmente em cada grupo.
+                        </div>
                     </div>
 
-                    <div class="input-group" id="sessionName-group">
-                        <label for="sessionName" class="input-label">1. Nome de Identificação</label>
-                        <span class="help-text">Um nome curto para você identificar este bot (ex: Loja_Centro). Sem espaços.</span>
-                        <input type="text" id="sessionName" placeholder="Ex: Bot_Vendas_01">
+                    <div id="edit-tab-triggers" class="tab-content">
+                        <label class="input-label">Disparos por Palavras-chave (Global)</label>
+                        <span class="help-text" style="margin-bottom: 15px;">Estas regras funcionam tanto no PV quanto nos Grupos deste robô.</span>
+                        <div id="edit-triggers-list"></div>
+                        <button type="button" class="btn-use-code" onclick="addTrigger('edit')" style="margin-top: 10px;"><i class="fas fa-plus"></i> Adicionar Regra</button>
+                        
+                        <div class="checkbox-group" style="margin-top: 20px;">
+                            <input type="checkbox" id="edit-ai-fallback">
+                            <div>
+                                <label for="edit-ai-fallback">Permitir IA nas demais mensagens</label>
+                                <div class="help-text">Se marcado, a IA continuará respondendo o que não for um gatilho. Se desmarcado, a IA é desativada e o bot só usará as regras.</div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div id="prompt-container" class="input-group">
-                        <label for="prompt" class="input-label">2. Personalidade do Robô <span class="example-link" onclick="fillExamplePrompt()">Ver Exemplo</span></label>
-                        <span class="help-text">Explique como ele deve agir. Diga quem ele é, o que vende e como deve responder.</span>
-                        <textarea id="prompt" rows="6" required placeholder="Ex: Você é um assistente virtual da Loja X..."></textarea>
+
+                    <div class="checkbox-group" id="edit-type-wrapper" style="margin-top: 20px;">
+                        <input type="checkbox" id="edit-botTypeGroup">
+                        <div>
+                            <label for="edit-botTypeGroup">Ativar Modo Grupo</label>
+                            <div class="help-text">Este bot atuará em múltiplos grupos.</div>
+                        </div>
                     </div>
-                    
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button type="button" class="btn-primary" onclick="backToBotTypeSelect()" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: auto;">
-                            <i class="fas fa-arrow-left"></i>
-                        </button>
-                        <button type="submit" class="btn-primary" id="create-bot-btn" style="flex: 1;">Salvar e Criar Robô</button>
-                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top:15px;">Salvar Alterações</button>
                 </form>
             </div>
         </div>
     </div>
+    <!-- FIM DO MODAL EDITAR ROBÔ -->
 
-    <div id="edit-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Editar Robô</h3><i class="fas fa-times" onclick="closeEditModal()" style="padding:10px; cursor:pointer;"></i></div>
-            <form id="edit-bot-form">
-                <input type="hidden" id="edit-sessionName-hidden">
-                <label class="input-label">Nome de Identificação</label>
-                <input type="text" id="edit-sessionName-display" disabled style="opacity: 0.5; margin-bottom:15px; width:100%; padding:10px; border:1px solid #333; background:#111; color:#777; border-radius:6px;">
-                
-                <div id="edit-global-settings">
-                    <label class="input-label">Personalidade</label>
-                    <textarea id="edit-prompt" rows="8" required style="font-family: sans-serif;"></textarea>
-                    
-                    <div id="edit-silence-wrapper" style="margin-top: 15px;">
-                        <label class="input-label">Silêncio (min) (Opcional)</label>
-                        <input type="number" id="edit-silenceTime" placeholder="0" min="0">
-                    </div>
-                    
-                    <div style="margin-top: 15px;">
-                        <label class="input-label">Número de Notificação (Opcional)</label>
-                        <span class="help-text">Receba um aviso no seu WhatsApp pessoal quando o bot responder. (Ex: 5511999999999)</span>
-                        <input type="number" id="edit-notificationNumber" placeholder="5511999999999">
-                    </div>
-                </div>
-                
-                <div id="edit-group-mode-msg" class="hidden" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-                    <i class="fas fa-info-circle"></i> Este bot está em Modo Grupo. As configurações de Personalidade, Nome e Silêncio devem ser feitas individualmente em cada grupo.
-                </div>
-
-                <div class="checkbox-group" id="edit-type-wrapper">
-                    <input type="checkbox" id="edit-botTypeGroup">
-                    <div>
-                        <label for="edit-botTypeGroup">Ativar Modo Grupo</label>
-                        <div class="help-text">Este bot atuará em múltiplos grupos.</div>
-                    </div>
-                </div>
-                <button type="submit" class="btn-primary" style="margin-top:10px;">Salvar Alterações</button>
-            </form>
-        </div>
-    </div>
-
+    <!-- MODAL EDITAR GRUPO (TELA CHEIA COM ABAS) -->
     <div id="group-edit-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Configurar Grupo</h3><i class="fas fa-times" onclick="document.getElementById('group-edit-modal').style.display='none'" style="padding:10px; cursor:pointer;"></i></div>
-            <form id="edit-group-form">
-                <input type="hidden" id="edit-group-id-hidden">
-                <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 0.85rem;">Grupo: <strong id="edit-group-name-display" style="color: var(--text-main);"></strong></p>
-                
-                <label class="input-label">Personalidade (Prompt)</label>
-                <span class="help-text">Como o bot deve se comportar neste grupo específico.</span>
-                <textarea id="edit-group-prompt" rows="6" style="font-family: sans-serif;" placeholder="Ex: Você é o admin deste grupo..."></textarea>
-                
-                <div style="margin-top: 15px;">
-                    <label class="input-label">Nome do Bot (Gatilho)</label>
-                    <span class="help-text">Nome para chamar o bot neste grupo.</span>
-                    <input type="text" id="edit-group-botname" placeholder="Ex: Jarvis">
-                </div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 style="margin:0;"><i class="fas fa-users-cog" style="color: var(--primary);"></i> Configurar Grupo</h3>
+                <i class="fas fa-times" onclick="document.getElementById('group-edit-modal').style.display='none'" style="font-size: 1.2rem; cursor:pointer;"></i>
+            </div>
+            
+            <div class="modal-body">
+                <form id="edit-group-form">
+                    <input type="hidden" id="edit-group-id-hidden">
+                    <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 0.85rem;">Grupo: <strong id="edit-group-name-display" style="color: var(--text-main);"></strong></p>
+                    
+                    <!-- ABAS -->
+                    <div class="tabs-header" style="margin-bottom: 15px;">
+                        <button type="button" class="tab-btn active" onclick="switchTab('group', 'prompt', event)"><i class="fas fa-brain"></i> IA (Prompt)</button>
+                        <button type="button" class="tab-btn" onclick="switchTab('group', 'triggers', event)"><i class="fas fa-bolt"></i> Respostas Rápidas</button>
+                    </div>
 
-                <div style="margin-top: 15px;">
-                    <label class="input-label">Tempo de Silêncio (min) (Opcional)</label>
-                    <span class="help-text">Intervalo entre respostas automáticas neste grupo.</span>
-                    <input type="number" id="edit-group-silence" placeholder="0" min="0">
-                </div>
+                    <!-- ABA PROMPT E CONFIGURAÇÕES -->
+                    <div id="group-tab-prompt" class="tab-content active">
+                        <label class="input-label">Personalidade (Prompt)</label>
+                        <span class="help-text">Como o bot deve se comportar neste grupo específico.</span>
+                        <textarea id="edit-group-prompt" rows="8" style="font-family: sans-serif;" placeholder="Ex: Você é o admin deste grupo..."></textarea>
+                        
+                        <div style="margin-top: 15px;">
+                            <label for="edit-group-siteUrl" class="input-label"><i class="fas fa-globe"></i> Aprender do Site (URL) (Opcional)</label>
+                            <span class="help-text">Insira o link do site para a IA usar como base de conhecimento neste grupo.</span>
+                            <input type="url" id="edit-group-siteUrl" placeholder="Ex: https://www.seusite.com.br">
+                        </div>
 
-                <button type="submit" class="btn-primary" style="margin-top:20px;">Salvar Configurações</button>
-            </form>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                            <div>
+                                <label class="input-label">Nome do Bot (Gatilho)</label>
+                                <span class="help-text">Nome para chamar o bot.</span>
+                                <input type="text" id="edit-group-botname" placeholder="Ex: Jarvis">
+                            </div>
+                            <div>
+                                <label class="input-label">Tempo de Silêncio (min)</label>
+                                <span class="help-text">Intervalo entre respostas.</span>
+                                <input type="number" id="edit-group-silence" placeholder="0" min="0">
+                            </div>
+                        </div>
+
+                        <div class="section-divider-title" style="margin-top: 25px;">Configurações Extras do Grupo</div>
+                        
+                        <div class="checkbox-group" style="margin-top: 15px;">
+                            <input type="checkbox" id="edit-group-antilink">
+                            <div>
+                                <label for="edit-group-antilink">Proibir Links (Anti-Link)</label>
+                                <div class="help-text">Se ativo, o robô irá apagar automaticamente as mensagens com links postados por usuários comuns.</div>
+                            </div>
+                        </div>
+
+                        <div class="checkbox-group" style="margin-top: 15px;">
+                            <input type="checkbox" id="edit-group-welcome-enable" onchange="document.getElementById('welcome-msg-container').style.display = this.checked ? 'block' : 'none'">
+                            <div>
+                                <label for="edit-group-welcome-enable">Mensagem de Boas-Vindas</label>
+                                <div class="help-text">Enviar mensagem quando um novo membro entrar.</div>
+                            </div>
+                        </div>
+                        
+                        <div id="welcome-msg-container" style="display: none; margin-top: 10px; margin-left: 32px;">
+                            <label class="input-label">Texto de Boas-Vindas</label>
+                            <span class="help-text">Use as variáveis <strong>{nome}</strong> e <strong>{grupo}</strong>.</span>
+                            <textarea id="edit-group-welcome" rows="3" placeholder="Ex: Olá {nome}! Seja bem-vindo ao grupo {grupo}!"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- ABA TRIGGERS (RESPOSTAS RÁPIDAS) -->
+                    <div id="group-tab-triggers" class="tab-content">
+                        <label class="input-label">Disparos por Palavras-chave (Deste Grupo)</label>
+                        <span class="help-text" style="margin-bottom: 15px;">Estas regras funcionam apenas dentro deste grupo e têm prioridade sobre a IA.</span>
+                        <div id="group-triggers-list"></div>
+                        <button type="button" class="btn-use-code" onclick="addTrigger('group')" style="margin-top: 10px;"><i class="fas fa-plus"></i> Adicionar Regra</button>
+                        
+                        <div class="checkbox-group" style="margin-top: 20px;">
+                            <input type="checkbox" id="group-ai-fallback">
+                            <div>
+                                <label for="group-ai-fallback">Permitir IA nas demais mensagens (Neste grupo)</label>
+                                <div class="help-text">Se desmarcado, o bot não usará a IA neste grupo, funcionando apenas pelas regras e comandos configurados.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="margin-top:20px;">Salvar Configurações</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -1055,7 +1457,7 @@
             
             <form id="pairing-form">
                 <div class="input-group">
-                    <input type="number" id="pairing-phone-number" required placeholder="5511999999999" style="text-align:center; font-size:1.2rem; letter-spacing:1px;">
+                    <input type="text" inputmode="numeric" id="pairing-phone-number" required placeholder="5511999999999" style="text-align:center; font-size:1.2rem; letter-spacing:1px;">
                 </div>
                 <button type="submit" class="btn-primary">Gerar Código</button>
             </form>
@@ -1073,6 +1475,13 @@
             <div id="pay-step-select">
                 <p style="color:#e1e1e6; margin-bottom:15px; font-weight:600;">Por quanto tempo deseja renovar?</p>
                 <div id="plans-container"></div>
+                
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1);">
+                    <p style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 10px; font-weight: 600;">Quer lucrar vendendo robôs?</p>
+                    <button onclick="closePaymentModal(); openResellModal();" class="btn-primary" style="background: linear-gradient(135deg, var(--purple-dark) 0%, var(--primary) 100%); border: 1px solid var(--primary);">
+                        <i class="fas fa-rocket"></i> Torne-se um Revendedor
+                    </button>
+                </div>
             </div>
 
             <div id="pix-loading" class="hidden payment-success-container" style="padding: 40px 0;">
@@ -1096,6 +1505,12 @@
                     <i class="fas fa-share-alt"></i> Compartilhar Pagamento
                 </button>
 
+                <div class="auth-divider" style="margin: 15px 0;"><span>OU</span></div>
+
+                <a id="btn-mp-checkout" href="#" target="_blank" class="btn-primary" style="background: #009EE3; color: white; text-decoration: none;">
+                    <i class="fas fa-credit-card"></i> Pagar com Cartão / Boleto
+                </a>
+
                 <p style="color: var(--green); font-size: 0.75rem; margin-top: 15px;"><i class="fas fa-check-circle"></i> Liberação Automática após pagamento</p>
                 <button onclick="resetPaymentModal()" style="background:transparent; color:#888; border:1px solid #333; padding:8px 20px; border-radius:20px; margin-top:10px; font-size:0.75rem;">Voltar</button>
             </div>
@@ -1105,10 +1520,21 @@
     <div id="resell-modal" class="modal-overlay">
         <div class="modal-content text-center">
             <i class="fas fa-times" onclick="document.getElementById('resell-modal').style.display='none'" style="position:absolute; right:20px; top:20px; padding:10px; cursor:pointer;"></i>
-            <h3 style="color: var(--primary);">Aumente seu Limite!</h3>
-            <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px;">Limite atual: <strong><span id="current-limit-display-modal">1</span></strong> robô(s).</p>
+            <h3 style="color: var(--primary); margin-top: 0;"><i class="fas fa-crown" style="color: var(--yellow);"></i> Seja um Revendedor!</h3>
+            <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Limite atual: <strong><span id="current-limit-display-modal">1</span></strong> robô(s).</p>
             
             <div id="resell-step-select">
+                <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: left; box-shadow: inset 0 0 20px rgba(0,0,0,0.2);">
+                    <h4 style="color: var(--text-main); margin-top: 0; margin-bottom: 12px; font-size: 1.05rem;"><i class="fas fa-rocket" style="color: var(--primary);"></i> Fature alto com sua própria plataforma!</h4>
+                    <ul style="font-size: 0.8rem; color: var(--text-muted); padding-left: 20px; margin-bottom: 0; line-height: 1.6;">
+                        <li style="margin-bottom: 8px;"><strong style="color: var(--green);">White-Label (Sua Marca):</strong> O painel exibe o seu nome e a sua logo! Ninguém saberá que somos nós por trás.</li>
+                        <li style="margin-bottom: 8px;"><strong style="color: var(--green);">Lucro 100% Seu:</strong> Você define o preço e recebe os pagamentos Pix direto na sua conta do Mercado Pago.</li>
+                        <li style="margin-bottom: 8px;"><strong style="color: var(--yellow);">Revenda Infinita:</strong> Não venda apenas para o cliente final! Seus clientes também podem virar revendedores pagando pacotes <strong style="text-decoration: underline;">direto para você</strong>. O crescimento é ilimitado!</li>
+                        <li style="margin-bottom: 8px;"><strong style="color: var(--green);">Gestão Completa:</strong> Painel exclusivo para criar links de indicação, gerenciar clientes e bloquear inadimplentes.</li>
+                        <li style="margin-bottom: 8px;"><strong style="color: var(--cyan);">Regra de Créditos:</strong> Cada 1 crédito = 1 mês. Se seu cliente assinar Mensal, desconta 1 crédito seu. Trimestral desconta 3, Semestral 6 e Anual 12 créditos. Mantenha seu saldo recarregado!</li>
+                    </ul>
+                </div>
+                <p style="color:#e1e1e6; margin-bottom:15px; font-weight:600; font-size: 0.9rem;">Escolha seu pacote de robôs para começar:</p>
                 <div id="resell-plans-container"></div>
             </div>
             
@@ -1132,6 +1558,12 @@
                 <button onclick="sharePixPayment('resell')" class="btn-share-pix">
                     <i class="fas fa-share-alt"></i> Compartilhar Pagamento
                 </button>
+
+                <div class="auth-divider" style="margin: 15px 0;"><span>OU</span></div>
+
+                <a id="btn-mp-checkout-resell" href="#" target="_blank" class="btn-primary" style="background: #009EE3; color: white; text-decoration: none;">
+                    <i class="fas fa-credit-card"></i> Pagar com Cartão / Boleto
+                </a>
 
                 <p style="color: var(--green); font-size: 0.75rem; margin-top: 15px;">Limite atualizado automaticamente!</p>
             </div>
@@ -1161,6 +1593,29 @@
         </div>
     </div>
 
+    <!-- Modal de Permissão de Notificação -->
+    <div id="notification-prompt-modal" class="modal-overlay" style="z-index: 100002;">
+        <div class="modal-content" style="max-width: 420px; text-align: center; border-top: 4px solid var(--blue);">
+            <div style="background: rgba(59, 130, 246, 0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+                <i class="fas fa-bell" style="font-size: 2.5rem; color: var(--blue); animation: pulse-guide 2s infinite;"></i>
+            </div>
+            <h3 style="margin-top: 0; color: var(--text-main); font-size: 1.3rem;">Não perca nenhuma venda!</h3>
+            <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem; line-height: 1.6;">
+                Para garantir respostas rápidas, precisamos da sua permissão para enviar <strong>alertas de novas mensagens</strong> direto na sua tela, mesmo quando o painel estiver minimizado.
+            </p>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 25px; text-align: left;">
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-cog" style="color: var(--primary);"></i> 
+                    <span>Fique tranquilo! Você pode desativar a qualquer momento acessando: <strong>Menu > Configurações do Sistema</strong>.</span>
+                </p>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-primary" onclick="declineNotificationsPrompt()" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted); flex: 1;">Depois</button>
+                <button class="btn-primary" onclick="acceptNotificationsPrompt()" style="background: var(--blue); flex: 2; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);">Sim, Ativar Alertas</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Support Chat Modal -->
     <div id="support-chat-modal" class="modal-overlay">
         <div class="modal-content modal-content-chat">
@@ -1173,6 +1628,12 @@
                     </div>
                 </div>
                 <i class="fas fa-times" onclick="closeSupportChat()" style="padding:10px; cursor:pointer; font-size:1.1rem;"></i>
+            </div>
+            
+            <div class="chat-fixed-greeting" style="padding: 15px 20px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); z-index: 10;">
+                <div class="chat-bubble bot" style="max-width: 100%; margin: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    Olá! Sou o assistente virtual do ZappBot. Como posso te ajudar hoje?
+                </div>
             </div>
             
             <div id="chat-messages" class="chat-messages">
@@ -1216,7 +1677,95 @@
             <button class="btn-primary" onclick="acceptTerms()" style="margin-top: 20px;">Entendi e Concordo</button>
         </div>
     </div>
+<!-- NOVO: EDITOR DE REGRA (SUB-MODAL) TELA CHEIA -->
+    <div id="trigger-editor-modal" class="modal-overlay" style="z-index: 3000;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 style="margin:0; color: var(--yellow);"><i class="fas fa-bolt"></i> Editor de Regra</h3>
+                <i class="fas fa-times" onclick="document.getElementById('trigger-editor-modal').style.display='none'" style="font-size: 1.2rem; cursor:pointer;"></i>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column;">
+                
+                <div class="input-group">
+                    <label class="input-label">Tipo de Correspondência</label>
+                    <select id="editor-matchType" onchange="toggleEditorKeywordField()" style="font-size: 1rem; padding: 15px;">
+                        <option value="exact">Correspondência Exata (Ex: "oi")</option>
+                        <option value="contains">Contém a palavra (Ex: frase com "preço")</option>
+                        <option value="all">Responder a Todas as Mensagens (Padrão)</option>
+                    </select>
+                </div>
 
+                <div class="input-group" id="editor-keyword-wrapper">
+                    <label class="input-label">Mensagem Recebida (Palavra-chave)</label>
+                    <input type="text" id="editor-keyword" placeholder="O que o cliente vai digitar?" style="font-size: 1.1rem; padding: 15px;">
+                </div>
+
+                <div class="input-group" style="flex: 1; display: flex; flex-direction: column;">
+                    <label class="input-label">Responder Mensagem</label>
+                    <span class="help-text">Escreva aqui a resposta que o robô enviará automaticamente.</span>
+                    <textarea id="editor-response" style="flex: 1; min-height: 200px; font-size: 1.05rem; padding: 15px; resize: none;" placeholder="Ex: Olá! O valor é R$ 50,00..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-primary" id="btn-delete-trigger" onclick="deleteCurrentTrigger()" style="background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid var(--red); width: auto; padding: 0 20px;">
+                        <i class="fas fa-trash"></i> Excluir
+                    </button>
+                    <button type="button" class="btn-primary" onclick="saveCurrentTrigger()" style="flex: 1; background: var(--yellow); color: #000;">
+                        <i class="fas fa-check"></i> Salvar Regra
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- INÍCIO DO MODAL LIVE CHAT (CLONE WHATSAPP) -->
+    <div id="livechat-modal" class="modal-overlay" style="z-index: 2500;">
+        <div class="modal-content modal-large livechat-modal">
+            
+            <!-- Sidebar (Contatos) -->
+            <div class="livechat-sidebar">
+                <div class="livechat-header">
+                    <span><i class="fas fa-robot" style="color: var(--primary);"></i> <span id="lc-bot-name">Robô</span></span>
+                    <i class="fas fa-times" onclick="closeLiveChat()" style="cursor: pointer; color: #8696a0;"></i>
+                </div>
+                <div class="livechat-search">
+                    <input type="text" placeholder="Pesquisar conversa..." onkeyup="filterLiveChats(this.value)">
+                </div>
+                <div class="livechat-contacts" id="lc-contacts-list">
+                    <div style="padding: 20px; text-align: center; color: #8696a0; font-size: 0.85rem;">Carregando conversas ativas...</div>
+                </div>
+            </div>
+
+            <!-- Main (Mensagens) -->
+            <div class="livechat-main" id="lc-main-area">
+                <div class="livechat-empty" id="lc-empty-state">
+                    <i class="fas fa-comments"></i>
+                    <h2>WhatsApp Live</h2>
+                    <p>Selecione um contato ao lado para ver as mensagens em tempo real.</p>
+                </div>
+                
+                <div id="lc-active-chat" style="display: none; width: 100%; height: 100%; flex-direction: column;">
+                    <div class="livechat-header">
+                        <div style="display: flex; align-items: center;">
+                            <i class="fas fa-arrow-left lc-back-btn" onclick="backToLiveChats()"></i>
+                            <div class="livechat-avatar" id="lc-current-avatar">U</div>
+                            <span id="lc-current-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">Nome do Contato</span>
+                        </div>
+                    </div>
+                    
+                    <div class="livechat-messages" id="lc-messages-container">
+                        <!-- Mensagens renderizadas aqui -->
+                    </div>
+                    
+                    <div class="livechat-input-area">
+                        <input type="text" id="lc-input-msg" placeholder="Digite uma mensagem e pressione Enter..." onkeypress="handleLiveChatKey(event)">
+                        <button class="livechat-btn-send" onclick="sendLiveChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- FIM DO MODAL LIVE CHAT -->
     <!-- Custom Alert Modal -->
     <div id="custom-alert-modal" class="modal-overlay" style="z-index: 100000;">
         <div class="modal-content" style="max-width: 350px; text-align: center;">
@@ -1263,7 +1812,44 @@
         function acceptTerms() {
             localStorage.setItem('zappbot_terms_accepted', 'true');
             document.getElementById('legal-modal').style.display = 'none';
+            checkAndPromptNotifications(); // Verifica notificações logo após aceitar os termos
         }
+
+        // --- SISTEMA DE PROMPT DE NOTIFICAÇÃO PADRÃO ---
+        function checkAndPromptNotifications() {
+            if (!("Notification" in window)) return;
+            if (window.isSecureContext === false) return;
+
+            const alreadyPrompted = localStorage.getItem('zappbot_notification_prompted');
+            
+            // Se o usuário ainda não respondeu ao navegador, mostramos nosso modal elegante
+            if (Notification.permission === 'default' && !alreadyPrompted) {
+                setTimeout(() => {
+                    document.getElementById('notification-prompt-modal').style.display = 'flex';
+                }, 1500);
+            } else if (Notification.permission === 'granted' && localStorage.getItem('zappbot_notifications') !== 'false') {
+                // Se ele já aceitou no passado e não desativou nas configs, garante que o push reconecte silenciosamente
+                toggleNotifications({ checked: true }, true);
+            }
+        }
+
+        function declineNotificationsPrompt() {
+            localStorage.setItem('zappbot_notification_prompted', 'true');
+            document.getElementById('notification-prompt-modal').style.display = 'none';
+        }
+
+        function acceptNotificationsPrompt() {
+            document.getElementById('notification-prompt-modal').style.display = 'none';
+            localStorage.setItem('zappbot_notification_prompted', 'true'); // Marca que já perguntou
+            
+            // Marca visualmente o checkbox lá das configurações
+            const toggle = document.getElementById('toggle-browser-notifications');
+            if (toggle) toggle.checked = true;
+
+            // Reaproveita a função existente enviando um objeto que imita o checkbox
+            toggleNotifications({ checked: true });
+        }
+        // ------------------------------------------------
 
         // Custom Alert Functions
         function showCustomAlert(msg) {
@@ -1277,6 +1863,92 @@
 
         // Custom Confirm Functions
         let pendingAction = null;
+
+        let sharedAudioCtx = null; // Reutiliza a instância para salvar muita memória RAM
+        function playNotificationSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                if (!sharedAudioCtx) sharedAudioCtx = new AudioContext();
+                if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+
+                const osc = sharedAudioCtx.createOscillator();
+                const gainNode = sharedAudioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(sharedAudioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, sharedAudioCtx.currentTime); // Nota D5
+                gainNode.gain.setValueAtTime(0.1, sharedAudioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, sharedAudioCtx.currentTime + 0.4);
+                osc.start();
+                osc.stop(sharedAudioCtx.currentTime + 0.4);
+            } catch (e) { console.log("Áudio bloqueado pelo navegador"); }
+        }
+
+        // Função auxiliar para converter a chave VAPID
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function toggleNotifications(checkbox, silent = false) {
+            if (checkbox.checked) {
+                localStorage.setItem('zappbot_notifications', 'true');
+                
+                if (!("Notification" in window) || !('serviceWorker' in navigator)) {
+                    if (!silent) showFeedback(true, "Avisos sonoros ativados! (Seu navegador não suporta push em segundo plano).");
+                    return;
+                }
+                if (window.isSecureContext === false) {
+                    if (!silent) showCustomAlert("Para receber notificações com o app fechado, você precisa acessar o painel via HTTPS.");
+                    return;
+                }
+                
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    if (!silent) playNotificationSound();
+                    if (!silent) showFeedback(true, "Configurando notificações em segundo plano...");
+
+                    try {
+                        const reg = await navigator.serviceWorker.ready;
+                        
+                        // Pega a chave pública do servidor
+                        const response = await fetch('/api/vapid-public-key');
+                        const vapidPublicKey = await response.text();
+                        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+                        // Inscreve o navegador no serviço de Push do Google/Apple
+                        const subscription = await reg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: convertedVapidKey
+                        });
+
+                        // Envia a inscrição para o nosso servidor salvar no banco de dados
+                        await fetch('/api/save-subscription', {
+                            method: 'POST',
+                            body: JSON.stringify(subscription),
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+
+                        if (!silent) showFeedback(true, "Notificações em segundo plano ativadas com sucesso!");
+                    } catch (e) {
+                        console.error('Erro ao configurar Push:', e);
+                        if (!silent) showFeedback(false, "Erro ao ativar notificações em segundo plano.");
+                    }
+                } else {
+                    if (!silent) showFeedback(true, "Avisos sonoros ativados! (Permissão visual negada).");
+                }
+            } else {
+                localStorage.setItem('zappbot_notifications', 'false');
+                if (!silent) showFeedback(true, "Notificações desativadas.");
+            }
+        }
 
         function showCustomConfirm(msg, action) {
             document.getElementById('custom-confirm-message').textContent = msg;
@@ -1295,52 +1967,83 @@
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
-            
-            // Inicializa o socket imediatamente para receber atualizações de branding
-            initializeSocket();
-
-            // REMOÇÃO AGRESSIVA DE SERVICE WORKERS ANTIGOS
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    for(let registration of registrations) {
-                        registration.unregister();
-                    }
-                });
+            // --- INÍCIO: Verifica se acabou de atualizar e exibe o Toast ---
+            if (localStorage.getItem('zappbot_just_updated') === 'true') {
+                localStorage.removeItem('zappbot_just_updated');
+                setTimeout(() => {
+                    showFeedback(true, 'Sistema atualizado com sucesso! 🚀');
+                }, 1000); // Delay de 1s para dar tempo da tela montar
             }
-
-            const urlParams = new URLSearchParams(window.location.search);
-            if(urlParams.has('error')) {
-                const errorMsg = urlParams.get('error');
-                if(errorMsg && errorMsg.trim() !== "" && errorMsg.toLowerCase() !== 'bad request') {
-                    showFeedback(false, errorMsg);
-                }
-                window.history.replaceState({}, document.title, "/");
-            }
+            // --- FIM ---
 
             try {
-                // Adiciona timestamp para evitar cache do navegador
+                // Proteção: Se o socket.io não carregar, não quebra a página
+                if (typeof io !== 'undefined') {
+                    initializeSocket();
+                } else {
+                    console.warn("Socket.io não carregou. O servidor pode estar offline.");
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+
+                // Proteção: Try/Catch no localStorage (pode falhar em abas anônimas)
+                try {
+                    if(urlParams.has('ref')) {
+                        const refCode = urlParams.get('ref');
+                        localStorage.setItem('zappbot_ref', refCode);
+                        document.cookie = `zappbot_ref=${refCode}; path=/; max-age=86400`;
+
+                        const manifestLink = document.querySelector('link[rel="manifest"]');
+                        if (manifestLink) manifestLink.href = `/manifest.json?ref=${refCode}`;
+                    } else {
+                        const savedRef = localStorage.getItem('zappbot_ref');
+                        if (savedRef) {
+                            const manifestLink = document.querySelector('link[rel="manifest"]');
+                            if (manifestLink) manifestLink.href = `/manifest.json?ref=${savedRef}`;
+                        }
+                    }
+                } catch(e) { console.warn("Acesso ao localStorage bloqueado."); }
+
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
+                }
+
+                if(urlParams.has('error')) {
+                    const errorMsg = urlParams.get('error');
+                    if(errorMsg && errorMsg.trim() !== "" && errorMsg.toLowerCase() !== 'bad request') {
+                        showFeedback(false, errorMsg);
+                    }
+                    window.history.replaceState({}, document.title, "/");
+                }
+
                 const response = await fetch('/check-session?t=' + new Date().getTime());
                 const data = await response.json();
-                
+
                 // Remove o loader inicial
                 document.getElementById('app-loader').style.display = 'none';
 
                 if (response.ok && data.loggedIn) {
                     enterDashboard(data.user);
                 } else {
-                    // Se a sessão não for válida, mostra a UI de login
                     const authSection = document.getElementById('auth-section');
                     authSection.classList.remove('hidden');
                     authSection.style.display = 'flex';
                     document.getElementById('dashboard-container').classList.add('hidden');
                 }
-            } catch (e) { 
-                console.log("Sessão expirada ou não logado."); 
+            } catch (e) {
+                console.error("Erro na inicialização:", e);
+                // GARANTE QUE O SPINNER SUMA MESMO SE DER ERRO
                 document.getElementById('app-loader').style.display = 'none';
                 const authSection = document.getElementById('auth-section');
                 authSection.classList.remove('hidden');
                 authSection.style.display = 'flex';
                 document.getElementById('dashboard-container').classList.add('hidden');
+            }
+
+            const notifToggle = document.getElementById('toggle-browser-notifications');
+            if (notifToggle) {
+                // Vem ativado por padrão. Só fica falso se o usuário for lá e desligar manualmente.
+                notifToggle.checked = localStorage.getItem('zappbot_notifications') !== 'false';
             }
 
             function setupImagePreview(inputId, imgId) {
@@ -1365,15 +2068,39 @@
                 }
             }
 
-            setupImagePreview('input-icon-small', 'preview-icon-small');
-            setupImagePreview('input-icon-large', 'preview-icon-large');
+            setupImagePreview('input-icon', 'preview-icon');
         });
 
         function enterDashboard(user) {
             document.getElementById('auth-section').style.display = 'none';
             document.getElementById('dashboard-container').classList.remove('hidden');
-            document.getElementById('user-display-name').textContent = user.username;
             
+            // Usa o Nome do Google, se não tiver, cai pro Email
+            const finalName = user.displayName || user.username;
+            document.getElementById('user-display-name').textContent = finalName;
+
+            // Se o usuário tiver foto do Google, substitui o ícone padrão
+            const userStrip = document.querySelector('.user-strip');
+            if (user.avatar && userStrip) {
+                const icon = userStrip.querySelector('.fa-user-circle');
+                if (icon) {
+                    const img = document.createElement('img');
+                    img.src = user.avatar;
+                    img.style.width = '24px';
+                    img.style.height = '24px';
+                    img.style.borderRadius = '50%';
+                    img.style.objectFit = 'cover';
+                    img.style.border = '1px solid var(--border)';
+                    icon.replaceWith(img);
+                }
+            }
+            
+            // Preenche o link de indicação do usuário
+            const refLinkInput = document.getElementById('my-ref-link');
+            if (refLinkInput && user.refCode) {
+                refLinkInput.value = window.location.origin + '/?ref=' + user.refCode;
+            }
+
             // O botão de menu agora aparece para todos
             document.getElementById('admin-menu-btn').classList.remove('hidden');
             
@@ -1404,17 +2131,37 @@
             // Verifica se o usuário já aceitou os termos
             if (!localStorage.getItem('zappbot_terms_accepted')) {
                 openLegalModal();
+            } else {
+                // Se já aceitou os termos no passado, aciona a verificação de notificações
+                checkAndPromptNotifications();
             }
         }
 
         function updateAdminVisibility(isAdmin) {
             const adminContent = document.getElementById('admin-only-content');
-            if (adminContent) {
-                if (isAdmin) {
-                    adminContent.classList.remove('hidden');
-                } else {
-                    adminContent.classList.add('hidden');
+            const btnNavUsers = document.getElementById('btn-nav-users');
+            const adminUpdateSection = document.getElementById('admin-update-section');
+            
+            const isReseller = currentUser && currentUser.botLimit > 1;
+
+            if (isAdmin || isReseller) {
+                if (btnNavUsers) btnNavUsers.classList.remove('hidden');
+                if (adminContent) adminContent.classList.remove('hidden');
+                
+                const logosSection = document.getElementById('logos-section');
+                if (logosSection) {
+                    logosSection.classList.remove('hidden'); // Admin e Revendedor agora podem ver e alterar
                 }
+            } else {
+                if (btnNavUsers) btnNavUsers.classList.add('hidden');
+                if (adminContent) adminContent.classList.add('hidden');
+            }
+
+            // EXCLUSIVO PARA O DONO DO PAINEL (ADMIN)
+            if (isAdmin) {
+                if (adminUpdateSection) adminUpdateSection.classList.remove('hidden');
+            } else {
+                if (adminUpdateSection) adminUpdateSection.classList.add('hidden');
             }
         }
 
@@ -1433,9 +2180,11 @@
         function navToDashboard() {
             document.getElementById('user-view').classList.remove('hidden');
             document.getElementById('admin-settings-view').classList.add('hidden');
+            if(document.getElementById('admin-users-view')) document.getElementById('admin-users-view').classList.add('hidden');
             
             document.getElementById('btn-nav-dashboard').classList.add('active');
             document.getElementById('btn-nav-admin').classList.remove('active');
+            if(document.getElementById('btn-nav-users')) document.getElementById('btn-nav-users').classList.remove('active');
             
             toggleSidebar();
         }
@@ -1443,11 +2192,38 @@
         function navToAdminSettings() {
             document.getElementById('user-view').classList.add('hidden');
             document.getElementById('admin-settings-view').classList.remove('hidden');
+            if(document.getElementById('admin-users-view')) document.getElementById('admin-users-view').classList.add('hidden');
             
             document.getElementById('btn-nav-dashboard').classList.remove('active');
             document.getElementById('btn-nav-admin').classList.add('active');
+            if(document.getElementById('btn-nav-users')) document.getElementById('btn-nav-users').classList.remove('active');
             
             toggleSidebar();
+        }
+
+        function navToUsers() {
+            document.getElementById('user-view').classList.add('hidden');
+            document.getElementById('admin-settings-view').classList.add('hidden');
+            if(document.getElementById('admin-users-view')) document.getElementById('admin-users-view').classList.remove('hidden');
+            
+            document.getElementById('btn-nav-dashboard').classList.remove('active');
+            document.getElementById('btn-nav-admin').classList.remove('active');
+            if(document.getElementById('btn-nav-users')) document.getElementById('btn-nav-users').classList.add('active');
+            
+            toggleSidebar();
+        }
+
+        function switchUserTab(tabName, event) {
+            document.getElementById('users-tab-active').classList.remove('active');
+            document.getElementById('users-tab-pending').classList.remove('active');
+            document.getElementById('users-tab-inactive').classList.remove('active');
+            document.getElementById('users-tab-empty').classList.remove('active');
+            
+            const btns = event.currentTarget.parentElement.querySelectorAll('.tab-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(`users-tab-${tabName}`).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
         function toggleAuthForms() {
@@ -1501,7 +2277,8 @@
             e.preventDefault();
             handleAuth('/register', {
                 username: document.getElementById('reg-username').value,
-                password: document.getElementById('reg-password').value
+                password: document.getElementById('reg-password').value,
+                ref: localStorage.getItem('zappbot_ref')
             }, 'btn-register-submit');
         };
 
@@ -1516,6 +2293,64 @@
         function fillExamplePrompt() {
             const example = "Você é o assistente virtual da Pizzaria. \n1. Seja educado.\n2. Cardápio: Pizza Queijo (R$30), Pizza Frango (R$35).";
             document.getElementById('prompt').value = example;
+        }
+
+        let knowledgeFiles = { create: [], edit:[] };
+
+        function renderKnowledgeFiles(modalType) {
+            const listDiv = document.getElementById(`${modalType}-knowledge-list`);
+            listDiv.innerHTML = '';
+            knowledgeFiles[modalType].forEach((file, index) => {
+                listDiv.innerHTML += `
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(16, 185, 129, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                        <span style="display: flex; align-items: center; gap: 8px; overflow: hidden; color: var(--green); font-size: 0.85rem;">
+                            <i class="fas fa-file-alt"></i> 
+                            <strong class="text-truncate" style="max-width: 200px;">${file.name}</strong>
+                        </span>
+                        <button type="button" onclick="deleteKnowledgeFile('${modalType}', ${index})" style="background: transparent; border: none; color: var(--red); cursor: pointer; padding: 4px;" title="Excluir Arquivo">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteKnowledgeFile(modalType, index) {
+            knowledgeFiles[modalType].splice(index, 1);
+            renderKnowledgeFiles(modalType);
+            showFeedback(true, 'Arquivo removido. Salve as alterações.');
+        }
+
+        async function processKnowledgeFile(modalType) {
+            const fileInput = document.getElementById(`${modalType}-knowledge-file`);
+            const loadingDiv = document.getElementById(`${modalType}-knowledge-loading`);
+            
+            if (!fileInput.files || fileInput.files.length === 0) return;
+
+            const file = fileInput.files[0];
+            const fileName = file.name;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/upload-knowledge', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if (data.success) {
+                    knowledgeFiles[modalType].push({ name: fileName, text: data.extractedText });
+                    renderKnowledgeFiles(modalType);
+                    showFeedback(true, 'Arquivo adicionado com sucesso!');
+                } else {
+                    showFeedback(false, data.message || 'Erro ao processar arquivo.');
+                }
+            } catch (error) {
+                showFeedback(false, 'Erro de conexão ao processar arquivo.');
+            } finally {
+                loadingDiv.style.display = 'none';
+                fileInput.value = '';
+            }
         }
 
         function confirmLogout() {
@@ -1548,6 +2383,12 @@
             document.getElementById('create-step-1').classList.remove('hidden');
             document.getElementById('create-step-2').classList.add('hidden');
             document.getElementById('create-bot-modal').style.display = 'flex';
+            
+            document.getElementById('create-knowledge-file').value = '';
+            knowledgeFiles.create =[];
+            renderKnowledgeFiles('create');
+
+            createTriggers =[]; renderTriggers('create'); switchTab('create', 'prompt');
         }
 
         function closeCreateModal() {
@@ -1569,7 +2410,7 @@
                 sessionNameInput.required = true;
             } else {
                 promptContainer.classList.remove('hidden');
-                promptInput.required = true;
+                promptInput.required = false;
                 sessionNameGroup.classList.add('hidden');
                 sessionNameInput.required = false;
             }
@@ -1605,7 +2446,8 @@
 
             socket.on('connect', () => {
                 // Solicita preços e branding imediatamente ao conectar
-                socket.emit('get-public-prices');
+                const ref = localStorage.getItem('zappbot_ref');
+                socket.emit('get-public-prices', { ref: ref });
             });
 
             // Tratamento de erro de conexão (Autenticação falha)
@@ -1625,8 +2467,8 @@
                 socket.emit('get-my-groups');
                 
                 // Se já recebemos os preços públicos, não precisamos pedir de novo, 
-                // mas se for admin, pedimos as configs completas
-                if (currentUser.isAdmin) {
+                // mas se for admin ou revendedor, pedimos as configs completas
+                if (currentUser.isAdmin || currentUser.botLimit > 1) {
                     socket.emit('admin-get-users');
                     socket.emit('admin-settings');
                 }
@@ -1639,8 +2481,42 @@
                 showFeedback(true, `Parabéns! Seu limite agora é de ${newLimit} robôs!`);
             });
 
+            // Escuta o comando do Admin em tempo real e gera notificação local
+            socket.on('app-update-available', (data) => {
+                const newVersion = typeof data === 'string' ? data : data.version;
+                const customMessage = (typeof data === 'object' && data.message) ? data.message : 'Nova versão disponível! Clique para atualizar.';
+
+                const localVersion = localStorage.getItem('zappbot_app_version');
+                if (localVersion !== newVersion) {
+                    const updateBar = document.getElementById('pwa-update-bar');
+                    const updateText = document.getElementById('pwa-update-text');
+
+                    if (updateBar) {
+                        if (updateText) updateText.textContent = customMessage;
+
+                        updateBar.classList.add('show');
+                        updateBar.setAttribute('data-new-version', newVersion);
+
+                        // Aproveita o sistema de notificação local do WhatsApp (Zero custo de RAM no servidor)
+                        if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+                            navigator.serviceWorker.ready.then(function(reg) {
+                                reg.showNotification('Atualização do Sistema 🚀', {
+                                    body: customMessage,
+                                    icon: '/api/logo/192',
+                                    vibrate:[200, 100, 200],
+                                    tag: 'system-update'
+                                });
+                            }).catch(err => console.log("Erro notificação:", err));
+                        } else {
+                            playNotificationSound(); // Toca som se não tiver permissão visual
+                        }
+                    }
+                }
+            });
+
             socket.on('initial-bots-list', (bots) => { 
                 const grid = document.getElementById('bots-grid');
+                const btnResellEmpty = document.getElementById('btn-resell-empty');
                 
                 // Remove o card temporário de carregamento se existir
                 const tempCard = document.getElementById('temp-bot-loading');
@@ -1657,9 +2533,11 @@
                             <p>Clique em "Novo Robô" para começar.</p>
                         </div>
                     `;
+                    if(btnResellEmpty) btnResellEmpty.classList.remove('hidden');
                 } else {
                     bots.forEach(renderBotCard);
                     updateAllBotGroupCounts();
+                    if(btnResellEmpty) btnResellEmpty.classList.add('hidden');
                 }
                 updateOnboardingSteps();
             });
@@ -1677,13 +2555,12 @@
             });
 
             socket.on('bot-updated', (bot) => { 
-                if (!currentUser.isAdmin && bot.owner !== currentUser.username) return;
-                if (currentUser.isAdmin && viewedUser && bot.owner !== viewedUser) return;
+                const isReseller = currentUser.botLimit > 1;
+                const hasPrivilege = currentUser.isAdmin || isReseller;
                 
-                if (currentUser.isAdmin && !viewedUser && bot.owner === currentUser.username) {
-                } else if (currentUser.isAdmin && !viewedUser && bot.owner !== currentUser.username) {
-                    return; 
-                }
+                if (!hasPrivilege && bot.owner !== currentUser.username) return;
+                if (hasPrivilege && viewedUser && bot.owner !== viewedUser) return;
+                if (hasPrivilege && !viewedUser && bot.owner !== currentUser.username) return;
 
                 // Remove o card temporário de carregamento se existir
                 const tempCard = document.getElementById('temp-bot-loading');
@@ -1698,6 +2575,9 @@
                 const emptyState = document.querySelector('.empty-state');
                 if (emptyState) emptyState.remove();
 
+                const btnResellEmpty = document.getElementById('btn-resell-empty');
+                if(btnResellEmpty) btnResellEmpty.classList.add('hidden');
+
                 renderBotCard(bot); 
                 renderGroupsForBot(bot.sessionName);
                 updateOnboardingSteps();
@@ -1707,6 +2587,7 @@
                 if(el) el.remove(); 
                 
                 const grid = document.getElementById('bots-grid');
+                const btnResellEmpty = document.getElementById('btn-resell-empty');
                 if (grid.children.length === 0) {
                     grid.innerHTML = `
                         <div class="empty-state">
@@ -1715,6 +2596,7 @@
                             <p>Clique em "Novo Robô" para começar.</p>
                         </div>
                     `;
+                    if(btnResellEmpty) btnResellEmpty.classList.remove('hidden');
                 }
                 delete botsData[d.sessionName];
                 updateOnboardingSteps();
@@ -1732,31 +2614,182 @@
                     showFeedback(true, 'Novo grupo detectado! Atualizando lista...');
                 }
             });
-            socket.on('admin-users-list', (users) => {
-                const list = document.getElementById('users-list'); list.innerHTML = '';
-                users.forEach(u => {
-                    const li = document.createElement('li'); li.className = 'user-list-item';
-                    li.style.borderBottom = "1px solid #333"; li.style.padding = "10px 0"; li.style.display="flex"; li.style.justifyContent="space-between";
-                    li.innerHTML = `
-                        <div style="display:flex; flex-direction:column;">
-                            <span style="font-weight:600; font-size:0.9rem;">${u.username}</span>
-                            <span style="font-size:0.75rem; color:#888;">${u.isAdmin ? 'Administrador' : `Limite: ${u.botLimit || 1} bots`} | ID: ${u.username}</span>
-                        </div>
-                        ${!u.isAdmin ? `<i class="fas fa-trash" style="color:var(--red); cursor:pointer; padding:5px;" onclick="delUser(event, '${u.username}')"></i>` : ''}
-                    `;
-                    li.onclick = (e) => { if(e.target.tagName !== 'I') openAdminUserView(u); };
-                    list.appendChild(li);
+            // Função Global de Filtro de Busca
+            window.filterAdminUsers = function(query) {
+                const q = query.toLowerCase();
+                document.querySelectorAll('.user-card-item').forEach(el => {
+                    const searchData = el.getAttribute('data-search');
+                    el.style.display = searchData.includes(q) ? 'flex' : 'none';
                 });
+            };
+
+            socket.on('admin-users-list', (users) => {
+                const listActive = document.getElementById('users-list-active'); 
+                const listPending = document.getElementById('users-list-pending'); 
+                const listInactive = document.getElementById('users-list-inactive'); 
+                const listEmpty = document.getElementById('users-list-empty'); 
+                
+                if(listActive) listActive.innerHTML = '';
+                if(listPending) listPending.innerHTML = '';
+                if(listInactive) listInactive.innerHTML = '';
+                if(listEmpty) listEmpty.innerHTML = '';
+
+                users.forEach(u => {
+                    const li = document.createElement('li'); 
+                    li.className = 'user-card-item';
+                    
+                    // Usa o Nome do Google (se tiver) ou o próprio Email
+                    const finalName = u.displayName || u.username;
+                    
+                    // Salva Nome e Email oculto no card para a barra de pesquisa achar ambos
+                    li.setAttribute('data-search', (u.username + ' ' + finalName).toLowerCase());
+                    
+                    let statusBadge = '';
+                    let targetList = null;
+
+                    if (u.userStatus === 'empty') {
+                        statusBadge = `<span style="font-size:0.65rem; background:rgba(113, 113, 122, 0.2); color:var(--text-muted); padding:3px 8px; border-radius:6px; font-weight:600;"><i class="fas fa-ghost"></i> Sem Robôs</span>`;
+                        targetList = listEmpty;
+                    } else if (u.userStatus === 'active') {
+                        statusBadge = `<span style="font-size:0.65rem; background:rgba(16, 185, 129, 0.15); color:var(--green); border:1px solid rgba(16, 185, 129, 0.3); padding:3px 8px; border-radius:6px; font-weight:600;"><i class="fas fa-check-circle"></i> ${u.badgeText}</span>`;
+                        targetList = listActive;
+                    } else if (u.userStatus === 'pending') {
+                        statusBadge = `<span style="font-size:0.65rem; background:rgba(59, 130, 246, 0.15); color:var(--blue); border:1px solid rgba(59, 130, 246, 0.3); padding:3px 8px; border-radius:6px; font-weight:600;"><i class="fas fa-clock"></i> ${u.badgeText}</span>`;
+                        targetList = listPending;
+                    } else {
+                        statusBadge = `<span style="font-size:0.65rem; background:rgba(244, 63, 94, 0.15); color:var(--red); border:1px solid rgba(244, 63, 94, 0.3); padding:3px 8px; border-radius:6px; font-weight:600;"><i class="fas fa-times-circle"></i> Inativo</span>`;
+                        targetList = listInactive;
+                    }
+
+                    // Identificação de Hierarquia (Admin, Revendedor, Cliente)
+                    let roleBadge = '';
+                    let hierarchyText = '';
+                    
+                    if (u.isAdmin) {
+                        roleBadge = `<span style="font-size:0.6rem; background:var(--primary); color:white; padding:2px 6px; border-radius:4px; font-weight:bold;">ADMIN</span>`;
+                        hierarchyText = `<span style="color:var(--primary);"><i class="fas fa-crown"></i> Dono do Sistema</span>`;
+                    } else if (u.botLimit > 1) {
+                        roleBadge = `<span style="font-size:0.6rem; background:var(--purple-dark); color:#e9d5ff; padding:2px 6px; border-radius:4px; font-weight:bold; border: 1px solid var(--primary);">REVENDEDOR</span>`;
+                    }
+
+                    if (!u.isAdmin) {
+                        if (currentUser.isAdmin) {
+                            if (u.parentId) {
+                                hierarchyText = `<span style="color:var(--text-muted);"><i class="fas fa-network-wired"></i> Cliente de: <strong style="color:var(--text-main);">${u.parentId}</strong></span>`;
+                            } else {
+                                hierarchyText = `<span style="color:var(--green);"><i class="fas fa-user-tie"></i> Seu Cliente Direto</span>`;
+                            }
+                        } else {
+                            hierarchyText = `<span style="color:var(--green);"><i class="fas fa-user-check"></i> Seu Cliente</span>`;
+                        }
+                    }
+
+                    // Botão de Excluir (Ajustado para tamanho menor)
+                    const delBtn = (!u.isAdmin) 
+                        ? `<button class="icon-btn btn-act-stop" style="background:rgba(244, 63, 94, 0.1); border:1px solid rgba(244, 63, 94, 0.2); width:32px; height:32px; border-radius:8px;" onclick="delUser(event, '${u.username}')" title="Excluir Usuário"><i class="fas fa-trash" style="color:var(--red); font-size:0.8rem; margin:0;"></i></button>` 
+                        : `<div style="width:32px;"></div>`;
+
+                    // Avatar: Imagem Redonda Menor
+                    let avatarHtml = '';
+                    if (u.avatar) {
+                        avatarHtml = `<img src="${u.avatar}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border);">`;
+                    } else {
+                        const initial = finalName.charAt(0).toUpperCase();
+                        avatarHtml = `<div class="user-avatar-initial">${initial}</div>`;
+                    }
+
+                    // Segredo: Exibe o email discretamente APENAS para o dono do sistema (Admin)
+                    const emailPequeno = currentUser.isAdmin && finalName !== u.username 
+                        ? `<div style="font-size: 0.65rem; color: #71717a; margin-top: -1px; letter-spacing: 0.02em;">${u.username}</div>` 
+                        : '';
+
+                    // Montagem final do HTML do Card
+                    li.innerHTML = `
+                        ${avatarHtml}
+                        
+                        <div class="user-info-col">
+                            <div class="user-name-row">
+                                <span class="user-name-text" title="${finalName}">${finalName}</span>
+                                ${roleBadge}
+                                ${!u.isAdmin ? statusBadge : ''}
+                            </div>
+                            ${emailPequeno}
+                            <div class="user-hierarchy">
+                                ${hierarchyText}
+                            </div>
+                            <div class="user-stats-row">
+                                <span>Limite: <strong>${u.botLimit || 1}</strong></span>
+                                <span>•</span>
+                                <span>Criados: <strong>${u.totalBots || 0}</strong></span>
+                            </div>
+                        </div>
+
+                        <div class="user-actions-col">
+                            <i class="fas fa-chevron-right" style="color:var(--text-muted); margin-right:10px; opacity:0.5;"></i>
+                            ${delBtn}
+                        </div>
+                    `;
+
+                    li.onclick = (e) => { 
+                        // Impede de abrir o painel se clicar no botão de apagar
+                        if(e.target.closest('button')) return;
+                        openAdminUserView(u); 
+                    };
+                    
+                    if(targetList) targetList.appendChild(li);
+                });
+                
+                // Mensagens de Lista Vazia com Design Moderno
+                const emptyMsg = (text) => `<div class="empty-state" style="padding:30px 20px; border:none; background:transparent;"><i class="fas fa-users" style="font-size:2rem; opacity:0.2;"></i><p style="margin-top:10px;">${text}</p></div>`;
+                
+                if(listActive && listActive.children.length === 0) listActive.innerHTML = emptyMsg('Nenhum usuário ativo.');
+                if(listPending && listPending.children.length === 0) listPending.innerHTML = emptyMsg('Nenhum usuário pendente.');
+                if(listInactive && listInactive.children.length === 0) listInactive.innerHTML = emptyMsg('Nenhum usuário inativo.');
+                if(listEmpty && listEmpty.children.length === 0) listEmpty.innerHTML = emptyMsg('Nenhum usuário sem robôs.');
             });
             
             socket.on('admin-settings', (s) => { 
                 document.getElementById('admin-app-name').value = s.appName || 'zappbot';
                 document.getElementById('mp-access-token').value = s.mpAccessToken || ''; 
                 document.getElementById('admin-support-number').value = s.supportNumber || '';
+                
+                // Preenche os preços na tela do revendedor
+                if(document.getElementById('price-monthly')) {
+                    document.getElementById('price-monthly').value = s.priceMonthly || '';
+                    document.getElementById('price-quarterly').value = s.priceQuarterly || '';
+                    document.getElementById('price-semiannual').value = s.priceSemiannual || '';
+                    document.getElementById('price-yearly').value = s.priceYearly || '';
+                    document.getElementById('price-resell-5').value = s.priceResell5 || '';
+                    document.getElementById('price-resell-10').value = s.priceResell10 || '';
+                    document.getElementById('price-resell-20').value = s.priceResell20 || '';
+                    document.getElementById('price-resell-30').value = s.priceResell30 || '';
+                }
             });
 
             socket.on('public-prices', (prices) => { 
                 publicPrices = prices || {}; 
+
+                // VERIFICAÇÃO DE ATUALIZAÇÃO PARA QUEM ESTAVA OFFLINE OU RECARREGOU A PÁGINA
+                if (prices.appVersion) {
+                    const localVersion = localStorage.getItem('zappbot_app_version');
+                    if (localVersion && localVersion !== prices.appVersion) {
+                        const updateBar = document.getElementById('pwa-update-bar');
+                        const updateText = document.getElementById('pwa-update-text'); // Pega o texto da barra
+
+                        if (updateBar) {
+                            // Se tiver mensagem personalizada no banco, substitui o texto padrão
+                            if (updateText && prices.appUpdateMessage) {
+                                updateText.textContent = prices.appUpdateMessage;
+                            }
+                            
+                            updateBar.classList.add('show');
+                            updateBar.setAttribute('data-new-version', prices.appVersion);
+                        }
+                    } else if (!localVersion) {
+                        // Primeira vez acessando, salva a versão atual para não pedir atualização à toa
+                        localStorage.setItem('zappbot_app_version', prices.appVersion);
+                    }
+                }
 
                 updateAppBranding(prices.appName);
 
@@ -1898,6 +2931,89 @@
                 removeTypingIndicator();
                 addChatMessage(data.text, 'bot', data.action);
             });
+
+            // --- LISTENERS DO SOCKET PARA LIVE CHAT ---
+            socket.on('livechat:receive-chats', (chats) => {
+                if (!currentLiveSession) return;
+                if (typeof livechatTimeout !== 'undefined') clearTimeout(livechatTimeout); // Cancela o aviso de offline
+                const container = document.getElementById('lc-contacts-list');
+                container.innerHTML = '';
+                
+                if (chats.length === 0) {
+                    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #8696a0; font-size: 0.85rem;">Aguardando novas mensagens... Envie um "Oi" para o robô para testar.</div>';
+                    return;
+                }
+
+                chats.forEach(c => {
+                    const safeId = c.jid.replace(/[^a-zA-Z0-9]/g, '');
+                    const date = new Date(c.timestamp);
+                    const timeStr = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                    
+                    const avatarHtml = c.profilePicUrl 
+                        ? `<img src="${c.profilePicUrl}" class="livechat-avatar" style="object-fit: cover;" onerror="this.outerHTML='<div class=\\'livechat-avatar\\'>${c.name.charAt(0).toUpperCase()}</div>'">` 
+                        : `<div class="livechat-avatar">${c.name.charAt(0).toUpperCase()}</div>`;
+
+                    const html = `
+                        <div class="livechat-contact ${currentLiveJid === c.jid ? 'active' : ''}" id="lc-contact-${safeId}" data-name="${c.name}" onclick="selectLiveChat('${c.jid}', '${c.name.replace(/'/g, "\\'")}', '${c.profilePicUrl || ''}')">
+                            ${avatarHtml}
+                            <div class="livechat-contact-info">
+                                <div class="livechat-contact-name">
+                                    ${c.name}
+                                    <span class="livechat-contact-time">${timeStr}</span>
+                                </div>
+                                <div class="livechat-contact-last">
+                                    ${c.unreadCount > 0 ? `<span class="livechat-unread">${c.unreadCount}</span>` : ''}
+                                    ${c.lastMessage || '...'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += html;
+                });
+            });
+
+            socket.on('livechat:receive-messages', (data) => {
+                if (currentLiveJid !== data.jid) return;
+                const container = document.getElementById('lc-messages-container');
+                container.innerHTML = '';
+                
+                if (data.messages.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; margin-top: 20px; color: #8696a0;">Nenhuma mensagem anterior.</div>';
+                } else {
+                    data.messages.forEach(msg => renderLiveMessage(msg));
+                }
+            });
+
+            socket.on('livechat:incoming-message', (data) => {
+                // Apenas para mensagens recebidas (não enviadas por mim) e de chats privados (não grupos)
+                if (!data.message.fromMe && !data.jid.endsWith('@g.us')) {
+                    const isViewingChat = (document.getElementById('livechat-modal').style.display === 'flex' && currentLiveSession === data.sessionName && currentLiveJid === data.jid);
+                    
+                    // Só notifica se o usuário não estiver com a conversa aberta lendo ativamente
+                    if (!isViewingChat) {
+                        const botName = botsData[data.sessionName] ? (botsData[data.sessionName].publicName || data.sessionName) : data.sessionName;
+                        const clientName = data.message.pushName || 'Cliente';
+                        const msgText = data.message.text || 'Nova mídia recebida';
+                        
+                        // 1. Toca o som
+                        playNotificationSound();
+                        
+                        // 2. FORÇA o alerta verde na tela do celular (Garante que você veja que chegou)
+                        showFeedback(true, `Nova mensagem de ${clientName} em ${botName}`);
+
+                        // A notificação visual do celular (Push) agora é feita exclusivamente pelo Backend (server.js)
+                        // O código local que gerava a notificação duplicada foi removido daqui.
+                    }
+                }
+
+                // Atualiza o chat se estiver aberto
+                if (currentLiveSession === data.sessionName) {
+                    if (currentLiveJid === data.jid) {
+                        renderLiveMessage(data.message);
+                    }
+                    socket.emit('livechat:request-chats', { sessionName: currentLiveSession });
+                }
+            });
         }
 
         function organizeGroups(groupsList) {
@@ -1927,6 +3043,7 @@
         function openAdminUserView(user) {
             viewedUser = user.username;
             document.getElementById('admin-settings-view').classList.add('hidden');
+            if(document.getElementById('admin-users-view')) document.getElementById('admin-users-view').classList.add('hidden');
             document.getElementById('user-view').classList.remove('hidden');
             
             const backBtn = document.getElementById('nav-back-btn');
@@ -1944,9 +3061,19 @@
         function goBackToAdminHome() {
             viewedUser = null;
             document.getElementById('user-view').classList.add('hidden');
-            document.getElementById('admin-settings-view').classList.remove('hidden');
+            
+            if(document.getElementById('admin-users-view')) {
+                document.getElementById('admin-users-view').classList.remove('hidden');
+            } else {
+                document.getElementById('admin-settings-view').classList.remove('hidden');
+            }
+            
             document.getElementById('nav-back-btn').classList.add('hidden');
             document.getElementById('bots-grid').innerHTML = '';
+            
+            document.getElementById('main-title-text').textContent = 'Meus Robôs';
+            document.getElementById('sub-title-text').textContent = 'Aqui você cria e controla seus atendentes virtuais.';
+            document.getElementById('user-logs-area').classList.add('hidden');
         }
 
         function formatDate(isoString) {
@@ -1962,6 +3089,7 @@
         }
 
         function renderBotCard(bot) {
+            bot.status = bot.status || 'Offline'; // <--- PREVINE CRASH DE TELA SE VIER VAZIO
             const prevBot = botsData[bot.sessionName];
             const prevStatus = prevBot ? prevBot.status : null;
             botsData[bot.sessionName] = bot;
@@ -2042,7 +3170,15 @@
                     const code = bot.qr.replace('PAIRING_CODE:', '');
                     qrSection = `
                         <div class="qr-area">
-                            <div class="qr-instructions"><strong>Conectar com Código:</strong><ol><li>No WhatsApp > Aparelhos Conectados</li><li>Conectar um aparelho</li><li>Toque em "Conectar com número de telefone"</li></ol></div>
+                            <div class="qr-instructions">
+                                <strong>Conectar com Código:</strong>
+                                <ol>
+                                    <li>Abra o WhatsApp no seu celular.</li>
+                                    <li>Toque nos <strong>três pontinhos</strong> (Android) ou em <strong>Configurações</strong> (iPhone).</li>
+                                    <li>Vá em <strong>Aparelhos conectados</strong> e toque em <strong>Conectar um aparelho</strong>.</li>
+                                    <li>Na tela da câmera, toque em <strong>"Conectar com número de telefone"</strong> (na parte inferior).</li>
+                                </ol>
+                            </div>
                             <div class="pairing-code-display">${code}</div>
                             <p style="font-size:0.8rem; color:#666;">Digite este código no seu celular.</p>
                         </div>
@@ -2050,7 +3186,15 @@
                 } else {
                     qrSection = `
                         <div class="qr-area">
-                            <div class="qr-instructions"><strong>Conectar WhatsApp:</strong><ol><li>Abra o WhatsApp e vá em <strong>Aparelhos Conectados</strong>.</li><li>Toque em <strong>Conectar um aparelho</strong>.</li><li>Aponte a câmera para o QR Code abaixo.</li></ol></div>
+                            <div class="qr-instructions">
+                                <strong>Conectar WhatsApp:</strong>
+                                <ol>
+                                    <li>Abra o WhatsApp no seu celular.</li>
+                                    <li>Toque nos <strong>três pontinhos</strong> (Android) ou em <strong>Configurações</strong> (iPhone).</li>
+                                    <li>Vá em <strong>Aparelhos conectados</strong> e toque em <strong>Conectar um aparelho</strong>.</li>
+                                    <li>Aponte a câmera para o QR Code abaixo.</li>
+                                </ol>
+                            </div>
                             <div class="qr-tgt" id="qr-tgt-${bot.sessionName}"></div>
                             <button class="btn-share-qr" onclick="shareQrCode('${bot.sessionName}')"><i class="fas fa-share-alt"></i> Compartilhar QR</button>
                             <button class="btn-use-code" onclick="openPairingModal('${bot.sessionName}')"><i class="fas fa-mobile-alt"></i> Conectar com Número</button>
@@ -2065,7 +3209,12 @@
             if (isRunning) {
                 toggleBtnHtml = `<button class="icon-btn btn-act-stop" onclick="sock('stop-bot','${bot.sessionName}')"><i class="fas fa-stop"></i><span>Desligar</span></button>`;
             } else {
-                toggleBtnHtml = `<button class="icon-btn btn-act-start" onclick="sock('start-bot','${bot.sessionName}')"><i class="fas fa-play"></i><span>Iniciar</span></button>`;
+                // Se o robô estiver expirado, o botão Iniciar avisa e abre o modal de pagamento
+                if (isExpired && !isGroupBot) {
+                    toggleBtnHtml = `<button class="icon-btn btn-act-start" onclick="showFeedback(false, 'Plano inativo! Escolha um plano para renovar.'); openPay('${bot.sessionName}')"><i class="fas fa-play"></i><span>Iniciar</span></button>`;
+                } else {
+                    toggleBtnHtml = `<button class="icon-btn btn-act-start" onclick="sock('start-bot','${bot.sessionName}')"><i class="fas fa-play"></i><span>Iniciar</span></button>`;
+                }
             }
 
             let groupButtonsHtml = '';
@@ -2134,20 +3283,24 @@
                     ${qrSection}
                     <div class="logs-container">
                         <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#666;">
-                            <span>TERMINAL</span> <span onclick="clearLogs('${bot.sessionName}')" style="cursor:pointer; font-size:0.65rem; text-decoration:underline;">Limpar</span>
+                            <span>TERMINAL</span> 
+                            <span>
+                                <i class="fas fa-copy" onclick="copyLogs('${bot.sessionName}')" title="Copiar Logs" style="cursor:pointer; margin-right:10px; font-size:0.8rem; transition:0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='#666'"></i>
+                                <span onclick="clearLogs('${bot.sessionName}')" style="cursor:pointer; font-size:0.65rem; text-decoration:underline;">Limpar</span>
+                            </span>
                         </div>
                     </div>
                     
-                    <!-- NOVA BARRA DE AÇÕES INTEGRADA -->
+                   <!-- NOVA BARRA DE AÇÕES INTEGRADA -->
                     <div class="action-bar">
                         ${toggleBtnHtml}
                         ${groupButtonsHtml}
+                        ${!isGroupBot && bot.status === 'Online' && bot.owner === currentUser.username ? `<button class="icon-btn" onclick="openLiveChat('${bot.sessionName}')"><i class="fas fa-comment-dots" style="color:var(--green)"></i><span>Ao Vivo</span></button>` : ''}
                         ${!isGroupBot ? `<button class="icon-btn" onclick="openEdit('${bot.sessionName}')"><i class="fas fa-pen"></i><span>Editar</span></button>` : ''}
                         ${!isGroupBot ? `<button class="icon-btn" onclick="openIgnoreModal('${bot.sessionName}')"><i class="fas fa-user-slash"></i><span>Ignorar</span></button>` : ''}
                         ${!isGroupBot ? `<button class="icon-btn btn-act-pay" onclick="openPay('${bot.sessionName}')"><i class="fas fa-bolt"></i><span>Renovar</span></button>` : ''}
                         <button class="icon-btn" onclick="delBot('${bot.sessionName}')"><i class="fas fa-trash"></i> <span>Excluir</span></button>
                     </div>
-                    
                     ${groupContainerHtml}
                     ${adminTools}
                 </div>
@@ -2288,20 +3441,44 @@
             });
         }
 
+        // Função Atualizada para Abrir Edição de Grupo
         function openGroupEdit(groupId) {
             let group = null;
+            
+            // Procura o grupo na lista local atualizada pelo socket
             Object.values(groupsData).forEach(list => {
                 const found = list.find(g => g.groupId === groupId);
                 if (found) group = found;
             });
 
-            if (!group) return;
+            if (!group) {
+                // Fallback: Tenta pedir atualização ao servidor se não achar localmente
+                socket.emit('get-my-groups');
+                showFeedback(false, "Carregando dados do grupo... Tente novamente em 1 segundo.");
+                return;
+            }
 
             document.getElementById('edit-group-id-hidden').value = groupId;
             document.getElementById('edit-group-name-display').innerText = group.groupName;
             document.getElementById('edit-group-prompt').value = group.prompt || '';
+            
+            const groupSiteInput = document.getElementById('edit-group-siteUrl');
+            if (groupSiteInput) groupSiteInput.value = ''; // Limpa sempre que abrir
+            
             document.getElementById('edit-group-silence').value = group.silenceTime || 0;
             document.getElementById('edit-group-botname').value = group.botName || '';
+            
+            // Configurações extras de grupo
+            document.getElementById('edit-group-antilink').checked = group.antiLink === true;
+            
+            const hasWelcome = group.welcomeMessage && group.welcomeMessage !== 'off';
+            document.getElementById('edit-group-welcome-enable').checked = hasWelcome;
+            document.getElementById('edit-group-welcome').value = hasWelcome ? group.welcomeMessage : '';
+            document.getElementById('welcome-msg-container').style.display = hasWelcome ? 'block' : 'none';
+
+            // Carrega os triggers do grupo, garantindo que seja um array
+            groupTriggers = Array.isArray(group.autoResponder) ? JSON.parse(JSON.stringify(group.autoResponder)) :[];
+            switchTab('group', 'prompt');
             
             document.getElementById('group-edit-modal').style.display = 'flex';
         }
@@ -2309,16 +3486,36 @@
         document.getElementById('edit-group-form').onsubmit = (e) => {
             e.preventDefault();
             const groupId = document.getElementById('edit-group-id-hidden').value;
-            const prompt = document.getElementById('edit-group-prompt').value;
+            let prompt = document.getElementById('edit-group-prompt').value;
+            const groupSiteUrl = document.getElementById('edit-group-siteUrl');
+            
+            if (groupSiteUrl && groupSiteUrl.value.trim() !== '') {
+                prompt += `\n\nBase de conhecimento (Aprenda tudo deste site e use para responder as dúvidas): ${groupSiteUrl.value.trim()}`;
+                groupSiteUrl.value = '';
+            }
+            
             const silenceTime = document.getElementById('edit-group-silence').value;
             const botName = document.getElementById('edit-group-botname').value;
+
+            // Pega os novos valores das opções de Anti-link e Boas-Vindas
+            const isAntiLink = document.getElementById('edit-group-antilink').checked;
+            const isWelcomeEnabled = document.getElementById('edit-group-welcome-enable').checked;
+            let welcomeText = document.getElementById('edit-group-welcome').value.trim();
+
+            if (isWelcomeEnabled && welcomeText === '') {
+                welcomeText = 'Olá {nome}! Seja bem-vindo(a) ao grupo {grupo}!'; // Texto padrão se deixar vazio
+            }
 
             socket.emit('update-group-settings', {
                 groupId: groupId,
                 settings: {
                     prompt: prompt,
                     silenceTime: parseInt(silenceTime),
-                    botName: botName
+                    botName: botName,
+                    autoResponder: groupTriggers,
+                    aiFallbackEnabled: document.getElementById('group-ai-fallback').checked,
+                    antiLink: isAntiLink, // <--- Envia pro Servidor
+                    welcomeMessage: isWelcomeEnabled ? welcomeText : 'off' // <--- Envia pro Servidor (Texto ou 'off')
                 }
             });
             
@@ -2459,7 +3656,12 @@
             const sessionName = document.getElementById('pairing-sessionName-hidden').value;
             let phoneNumber = document.getElementById('pairing-phone-number').value;
             
-            phoneNumber = phoneNumber.replace(/\D/g, '');
+            if (!phoneNumber) {
+                showFeedback(false, 'Por favor, insira o número do WhatsApp.');
+                return;
+            }
+            
+            phoneNumber = String(phoneNumber).replace(/\D/g, '');
 
             // Lógica para adicionar DDD 55 se o usuário esquecer (Brasil)
             // Telefones BR: 10 dígitos (Fixo: 11 + 8) ou 11 dígitos (Celular: 11 + 9)
@@ -2522,14 +3724,45 @@
         }
 
         function delUser(e, u) { e.stopPropagation(); showCustomConfirm('Apagar usuário '+u+'?', () => socket.emit('admin-delete-user', {username:u})); }
-        function clearLogs(n) { localStorage.removeItem(`log-${n}`); document.querySelector(`#bot-${n} .logs-container`).innerHTML='<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#666;"><span>TERMINAL</span><span onclick="clearLogs(\''+n+'\')" style="cursor:pointer; font-size:0.65rem; text-decoration:underline;">Limpar</span></div>'; }
+        function clearLogs(n) { localStorage.removeItem(`log-${n}`); document.querySelector(`#bot-${n} .logs-container`).innerHTML='<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#666;"><span>TERMINAL</span><span><i class="fas fa-copy" onclick="copyLogs(\''+n+'\')" title="Copiar Logs" style="cursor:pointer; margin-right:10px; font-size:0.8rem; transition:0.2s;" onmouseover="this.style.color=\'var(--primary)\'" onmouseout="this.style.color=\'#666\'"></i><span onclick="clearLogs(\''+n+'\')" style="cursor:pointer; font-size:0.65rem; text-decoration:underline;">Limpar</span></span></div>'; }
         
+        function copyLogs(n) {
+            const container = document.querySelector(`#bot-${n} .logs-container`);
+            if (!container) return;
+            const lines = container.querySelectorAll('.log-line');
+            if (lines.length === 0) {
+                showFeedback(false, 'Nenhum log para copiar.');
+                return;
+            }
+            const textToCopy = Array.from(lines).map(l => l.textContent).join('\n');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showFeedback(true, 'Logs copiados com sucesso!');
+            }).catch(() => {
+                showFeedback(false, 'Erro ao copiar logs.');
+            });
+        }
+
         function openEdit(n) {
             const bot = botsData[n];
             document.getElementById('edit-modal').style.display='flex';
             document.getElementById('edit-sessionName-hidden').value=n;
-            document.getElementById('edit-sessionName-display').value=n;
             document.getElementById('edit-prompt').value=bot.prompt;
+            
+            const editSiteInput = document.getElementById('edit-siteUrl');
+            if (editSiteInput) editSiteInput.value = ''; // Limpa sempre que abrir
+            
+            document.getElementById('edit-knowledge-file').value = '';
+            
+            // Carrega os arquivos salvos ou adapta do formato antigo para não quebrar bots já criados
+            if (bot.knowledgeBaseFiles && bot.knowledgeBaseFiles.length > 0) {
+                knowledgeFiles.edit =[...bot.knowledgeBaseFiles];
+            } else if (bot.knowledgeBaseText && bot.knowledgeBaseText.trim() !== '') {
+                knowledgeFiles.edit =[{ name: bot.knowledgeBaseName || 'base_antiga.txt', text: bot.knowledgeBaseText }];
+            } else {
+                knowledgeFiles.edit =[];
+            }
+            renderKnowledgeFiles('edit');
+
             document.getElementById('edit-botTypeGroup').checked = bot.botType === 'group';
             
             document.getElementById('edit-silenceTime').value = bot.silenceTime || 0;
@@ -2547,20 +3780,32 @@
                 document.getElementById('edit-group-mode-msg').classList.add('hidden');
                 typeWrapper.classList.add('hidden');
                 silenceWrapper.classList.add('hidden');
+                document.getElementById('edit-ai-fallback').checked = bot.aiFallbackEnabled !== false;
+                editTriggers = bot.autoResponder || []; renderTriggers('edit'); switchTab('edit', 'prompt');
             }
         }
         function closeEditModal() { document.getElementById('edit-modal').style.display='none'; }
         
         document.getElementById('edit-bot-form').onsubmit = (e) => { 
             e.preventDefault(); 
+            let finalPromptEdit = document.getElementById('edit-prompt').value;
+            const editSiteUrl = document.getElementById('edit-siteUrl');
+            if (editSiteUrl && editSiteUrl.value.trim() !== '') {
+                finalPromptEdit += `\n\nBase de conhecimento (Aprenda tudo deste site e use para responder as dúvidas): ${editSiteUrl.value.trim()}`;
+                editSiteUrl.value = ''; // Limpa o campo após adicionar
+            }
+            
             socket.emit('update-bot', { 
                 sessionName: document.getElementById('edit-sessionName-hidden').value, 
-                newPrompt: document.getElementById('edit-prompt').value,
+                newPrompt: finalPromptEdit,
                 botType: document.getElementById('edit-botTypeGroup').checked ? 'group' : 'individual',
                 botName: '',
                 silenceTime: document.getElementById('edit-silenceTime').value,
-                notificationNumber: document.getElementById('edit-notificationNumber').value
-            }); 
+                notificationNumber: document.getElementById('edit-notificationNumber').value,
+                autoResponder: editTriggers,
+                aiFallbackEnabled: document.getElementById('edit-ai-fallback').checked,
+                knowledgeBaseFiles: knowledgeFiles.edit
+            });
             closeEditModal(); 
         };
 
@@ -2616,10 +3861,11 @@
             socket.emit('update-ignored-identifiers', { sessionName, ignoredIdentifiers: newList });
         }
 
-        document.getElementById('add-bot-form').onsubmit=(e)=>{
+document.getElementById('add-bot-form').onsubmit=(e)=>{
             e.preventDefault(); 
             const nInput = document.getElementById('sessionName');
             const pInput = document.getElementById('prompt');
+            const siteUrlInput = document.getElementById('create-siteUrl');
             const botType = document.getElementById('selectedBotType').value; 
             const platformInput = document.getElementById('botPlatform');
             const tokenInput = document.getElementById('telegramToken');
@@ -2662,21 +3908,33 @@
             // Remove o empty state se existir
             const empty = document.querySelector('.empty-state');
             if(empty) empty.remove();
+            
+            const btnResellEmpty = document.getElementById('btn-resell-empty');
+            if(btnResellEmpty) btnResellEmpty.classList.add('hidden');
 
             grid.prepend(tempCard);
+            
+            let finalPromptCreate = pInput.value.trim();
+            if (siteUrlInput && siteUrlInput.value.trim() !== '') {
+                finalPromptCreate += `\n\nBase de conhecimento (Aprenda tudo deste site e use para responder as dúvidas): ${siteUrlInput.value.trim()}`;
+            }
 
             socket.emit('create-bot', { 
-                sessionName:n, 
-                prompt: botType === 'group' ? '' : pInput.value.trim(), 
-                owner:o,
+                sessionName: n, 
+                prompt: botType === 'group' ? '' : finalPromptCreate, 
+                owner: o,
                 botType: botType,
                 botName: '', 
                 silenceTime: 0, 
                 platform: platformInput.value,
-                token: tokenInput.value.trim()
+                token: tokenInput.value.trim(),
+                autoResponder: createTriggers,
+                aiFallbackEnabled: document.getElementById('create-ai-fallback').checked,
+                knowledgeBaseFiles: knowledgeFiles.create
             });
             
             nInput.value=''; pInput.value=''; 
+            if (siteUrlInput) siteUrlInput.value = '';
             tokenInput.value = '';
         };
         
@@ -2788,6 +4046,13 @@
                     document.getElementById('pay-amount').innerText = `R$ ${d.amount}`;
                     document.getElementById('pix-qrcode-display').src = `data:image/png;base64,${d.qr_code_base64}`;
                     document.getElementById('pix-copy-paste').value = d.qr_code;
+                    
+                    // Adiciona o link do Mercado Pago ao botão de Cartão
+                    const btnMp = document.getElementById('btn-mp-checkout');
+                    if(btnMp && d.checkout_url) {
+                        btnMp.href = d.checkout_url;
+                        btnMp.style.display = 'flex';
+                    }
                 } else { 
                     showCustomAlert(d.error || 'Erro ao gerar Pix'); 
                     closePaymentModal(); 
@@ -2829,7 +4094,14 @@
                     document.getElementById('resell-pay-amount').innerText = `R$ ${d.amount}`;
                     document.getElementById('resell-qrcode-display').src = `data:image/png;base64,${d.qr_code_base64}`;
                     document.getElementById('resell-copy-paste').value = d.qr_code;
-                } else { showCustomAlert(d.error || 'Erro ao gerar Pix'); document.getElementById('resell-modal').style.display='none'; }
+
+                    // Adiciona o link do Mercado Pago ao botão de Cartão
+                    const btnMpResell = document.getElementById('btn-mp-checkout-resell');
+                    if(btnMpResell && d.checkout_url) {
+                        btnMpResell.href = d.checkout_url;
+                        btnMpResell.style.display = 'flex';
+                    }
+                } else { showCustomAlert(d.error || 'Erro ao gerar Pagamento'); document.getElementById('resell-modal').style.display='none'; }
             } catch { showCustomAlert('Erro de conexão'); document.getElementById('resell-modal').style.display='none'; }
         }
 
@@ -2885,6 +4157,46 @@
             window.location.href = '/api/admin/backup';
         }
 
+        // --- LÓGICA DE ATUALIZAÇÃO FORÇADA ---
+        function forceGlobalUpdate() {
+            const msgInput = document.getElementById('admin-update-message');
+            const customMsg = msgInput ? msgInput.value.trim() : "";
+            
+            showCustomConfirm('Isso enviará o aviso digitado para TODOS os usuários online agora. Deseja continuar?', () => {
+                socket.emit('admin-force-update', { message: customMsg });
+                if (msgInput) msgInput.value = ''; // Limpa a caixa após enviar
+            });
+        }
+
+        // Ação do botão "ATUALIZAR AGORA" da barra flutuante
+        document.getElementById('pwa-update-btn').addEventListener('click', () => {
+            const updateBar = document.getElementById('pwa-update-bar');
+            const newVersion = updateBar.getAttribute('data-new-version');
+            
+            // Salva a nova versão no celular/PC do cliente para a barra sumir
+            if (newVersion) {
+                localStorage.setItem('zappbot_app_version', newVersion);
+            }
+            
+            // --- INÍCIO: Salva um sinalizador para mostrar o toast após recarregar ---
+            localStorage.setItem('zappbot_just_updated', 'true');
+            // --- FIM ---
+
+            document.getElementById('pwa-update-btn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+            
+            // Desregistra o Service Worker para matar o cache antigo e recarrega a página
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                        registration.unregister();
+                    }
+                    window.location.reload(true);
+                });
+            } else {
+                window.location.reload(true);
+            }
+        });
+
         async function handleRestoreFile() {
             const input = document.getElementById('restore-file-input');
             if (input.files.length === 0) return;
@@ -2920,20 +4232,35 @@
         const CHAT_INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutos de inatividade com chat aberto
         const CHAT_RETENTION_MS = 10 * 60 * 1000; // 10 minutos para limpar histórico se não reabrir
 
+        let pageScrollPos = 0;
+
         function openSupportChat() {
+            // Travamento agressivo do Body (Evita que o teclado empurre o layout no mobile)
+            pageScrollPos = window.scrollY || document.documentElement.scrollTop;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${pageScrollPos}px`;
+            document.body.style.width = '100%';
+            
             document.getElementById('support-chat-modal').style.display = 'flex';
             const input = document.getElementById('chat-input');
             
-            // Tenta carregar histórico. Se tiver expirado, loadChatHistory limpará tudo.
             loadChatHistory();
-            
-            // Iniciar timer de inatividade
             resetChatTimer();
             
-            setTimeout(() => input.focus(), 100);
+            setTimeout(() => {
+                input.focus();
+                const container = document.getElementById('chat-messages');
+                container.scrollTop = container.scrollHeight;
+            }, 300);
         }
 
         function closeSupportChat(clearHistory = false) {
+            // Destravamento do Body e restauração da posição da tela
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            window.scrollTo(0, pageScrollPos);
+
             document.getElementById('support-chat-modal').style.display = 'none';
             clearTimeout(chatTimer);
             
@@ -3045,26 +4372,20 @@
                     // Se passou do tempo de retenção (10 min), limpa tudo
                     if (now - data.timestamp > CHAT_RETENTION_MS) {
                         clearLocalChat();
-                        container.innerHTML = `
-                            <div class="chat-bubble bot">
-                                Olá! Sou o assistente virtual do ZappBot. Como posso te ajudar hoje?
-                            </div>
-                        `;
+                        container.innerHTML = '';
                     } else {
                         // Se não expirou, carrega o histórico
-                        container.innerHTML = data.html;
-                        container.scrollTop = container.scrollHeight;
+                        // Remove a bolha antiga caso o usuário ainda a tenha salva no cache local
+                        let htmlSafe = data.html.replace(/<div class="chat-bubble bot">\s*Olá! Sou o assistente virtual do ZappBot\. Como posso te ajudar hoje\?\s*<\/div>/g, '');
+                        container.innerHTML = htmlSafe;
+                        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
                     }
                 } catch (e) {
                     // Se der erro no JSON (formato antigo), limpa
                     clearLocalChat();
                 }
             } else {
-                container.innerHTML = `
-                    <div class="chat-bubble bot">
-                        Olá! Sou o assistente virtual do ZappBot. Como posso te ajudar hoje?
-                    </div>
-                `;
+                container.innerHTML = '';
             }
         }
 
@@ -3112,46 +4433,57 @@
                 return; // Encerra a função aqui.
             }
 
-            // Passo 2: Ação de maior prioridade: Conectar um bot.
-            // Varre todos os bots procurando por um que precise de conexão.
+            // Passo 2: Ação de maior prioridade: Renovar bot expirado/inativo.
             for (const key of botKeys) {
                 const bot = botsData[key];
-                // Se o status indica que está aguardando QR Code ou Pareamento.
-                if (bot.status.includes('Aguardando')) {
+                const isExpired = new Date(bot.trialExpiresAt) < new Date();
+                if (isExpired && bot.botType !== 'group') {
                     const card = document.getElementById(`bot-${key}`);
                     if (card) {
-                        // Prioriza o botão de conectar com número, pois é mais simples.
-                        const btnUseCode = card.querySelector('.btn-use-code');
-                        if (btnUseCode) {
-                            btnUseCode.classList.add('guide-highlight');
+                        const btnPay = card.querySelector('.btn-act-pay');
+                        if (btnPay) {
+                            btnPay.classList.add('guide-highlight');
                             return; // Encontrou a ação mais importante, encerra a função.
                         }
                     }
                 }
             }
 
-            // Passo 3: Segunda prioridade: Iniciar um bot que está desligado.
-            // Isso só roda se o loop anterior não encontrou nenhum bot "Aguardando".
+            // Passo 3: Conectar um bot (Aguardando QR Code ou Pareamento).
             for (const key of botKeys) {
                 const bot = botsData[key];
-                // Verifica se o bot não está online, nem iniciando, nem aguardando conexão.
-                if (bot.status !== 'Online' && !bot.status.includes('Iniciando') && !bot.status.includes('Aguardando')) {
+                if (bot.status.includes('Aguardando')) {
                     const card = document.getElementById(`bot-${key}`);
                     if (card) {
-                        const btnStart = card.querySelector('.btn-act-start');
-                        if (btnStart) {
-                            btnStart.classList.add('guide-highlight');
-                            return; // Encontrou a próxima ação mais importante, encerra.
+                        const btnUseCode = card.querySelector('.btn-use-code');
+                        if (btnUseCode) {
+                            btnUseCode.classList.add('guide-highlight');
+                            return;
                         }
                     }
                 }
             }
 
-            // Passo 4: Terceira prioridade: Ativar o primeiro grupo de um bot.
-            // Isso só roda se TODOS os bots já estiverem online ou iniciando.
+            // Passo 4: Iniciar um bot que está desligado (mas com plano ATIVO).
             for (const key of botKeys) {
                 const bot = botsData[key];
-                // Verifica se é um bot de grupo, se está online e se não tem grupos.
+                const isExpired = new Date(bot.trialExpiresAt) < new Date();
+                // Só manda iniciar se NÃO estiver expirado
+                if (!isExpired && bot.status !== 'Online' && !bot.status.includes('Iniciando') && !bot.status.includes('Aguardando')) {
+                    const card = document.getElementById(`bot-${key}`);
+                    if (card) {
+                        const btnStart = card.querySelector('.btn-act-start');
+                        if (btnStart) {
+                            btnStart.classList.add('guide-highlight');
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Passo 5: Ativar o primeiro grupo de um bot.
+            for (const key of botKeys) {
+                const bot = botsData[key];
                 if (bot.botType === 'group' && bot.status === 'Online') {
                     const groups = groupsData[key] || [];
                     if (groups.length === 0) {
@@ -3160,16 +4492,305 @@
                             const btnLink = card.querySelector('.btn-act-link');
                             if (btnLink) {
                                 btnLink.classList.add('guide-highlight');
-                                return; // Encontrou a próxima ação, encerra.
+                                return;
                             }
                         }
                     }
                 }
             }
-            
-            // Se nenhum dos loops anteriores retornou, significa que não há nenhuma ação de onboarding pendente.
         }
+        // --- SISTEMA DE AUTO RESPONDER (ATUALIZADO PARA TELA CHEIA) ---
+        let createTriggers = [];
+        let editTriggers = [];
+        let groupTriggers = []; // <--- NOVA VARIÁVEL ADICIONADA
+        
+        let currentEditingModal = null; // 'create', 'edit' ou 'group'
+        let currentEditingIndex = -1; // -1 significa Nova Regra
+
+        function switchTab(modal, tabName, event) {
+            // 1. Oculta os dois conteúdos
+            const promptTab = document.getElementById(`${modal}-tab-prompt`);
+            const triggersTab = document.getElementById(`${modal}-tab-triggers`);
+            if (promptTab) promptTab.classList.remove('active');
+            if (triggersTab) triggersTab.classList.remove('active');
+            
+            // 2. Mapeia qual é o formulário correto baseado no modal aberto
+            let formId = '';
+            if (modal === 'create') formId = 'add-bot-form';
+            else if (modal === 'edit') formId = 'edit-bot-form';
+            else if (modal === 'group') formId = 'edit-group-form';
+            
+            // 3. Remove a cor azul (active) de todos os botões desse formulário específico
+            if (formId) {
+                document.querySelectorAll(`#${formId} .tabs-header .tab-btn`).forEach(b => b.classList.remove('active'));
+            }
+            
+            // 4. Mostra o conteúdo clicado
+            const activeContent = document.getElementById(`${modal}-tab-${tabName}`);
+            if (activeContent) activeContent.classList.add('active');
+            
+            // 5. Pinta de azul o botão correto
+            if (event) {
+                // Se foi um clique do usuário
+                event.currentTarget.classList.add('active');
+            } else if (formId) {
+                // Se foi via sistema (ao abrir a tela), força a aba certa a ficar azul
+                const buttons = document.querySelectorAll(`#${formId} .tabs-header .tab-btn`);
+                if (tabName === 'prompt' && buttons.length > 0) buttons[0].classList.add('active');
+                if (tabName === 'triggers' && buttons.length > 1) buttons[1].classList.add('active');
+            }
+        }
+
+        // 1. Renderiza a lista de regras de forma resumida e clicável (Cards)
+        function renderTriggers(modal) {
+            const list = modal === 'create' ? createTriggers : (modal === 'group' ? groupTriggers : editTriggers);
+            const container = document.getElementById(`${modal}-triggers-list`);
+            container.innerHTML = '';
+            
+            // --- NOVA LÓGICA: OCULTAR CHECKBOX DA IA SE EXISTIR REGRA PARA "TODAS AS MENSAGENS" ---
+            const aiCheckbox = document.getElementById(`${modal}-ai-fallback`);
+            if (aiCheckbox) {
+                const hasAllMatch = list.some(t => t.matchType === 'all');
+                const checkboxContainer = aiCheckbox.closest('.checkbox-group');
+                if (checkboxContainer) {
+                    checkboxContainer.style.display = hasAllMatch ? 'none' : 'flex';
+                }
+            }
+            
+            if (list.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding: 20px 0;">Nenhuma regra configurada.<br>Clique em "Adicionar Regra".</p>`;
+                return;
+            }
+
+            list.forEach((trigger, index) => {
+                const isAll = trigger.matchType === 'all';
+                const matchLabel = trigger.matchType === 'exact' ? 'Exata' : (isAll ? 'Todas' : 'Contém');
+                const badgeClass = isAll ? 'rule-badge all' : 'rule-badge';
+                const title = isAll ? 'Qualquer Mensagem' : trigger.keyword;
+                const desc = trigger.response;
+                
+                container.innerHTML += `
+                    <div class="rule-summary-item" onclick="openTriggerEditor('${modal}', ${index})">
+                        <div class="rule-summary-content">
+                            <span class="${badgeClass}">${matchLabel}</span>
+                            <span class="rule-title">${title}</span>
+                            <span class="rule-desc">${desc}</span>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: var(--primary);"></i>
+                    </div>
+                `;
+            });
+        }
+
+        // 2. Abre o Editor Grande para Adicionar ou Editar
+        function addTrigger(modal) {
+            openTriggerEditor(modal, -1);
+        }
+
+        function openTriggerEditor(modal, index) {
+            currentEditingModal = modal;
+            currentEditingIndex = index;
+            const list = modal === 'create' ? createTriggers : (modal === 'group' ? groupTriggers : editTriggers);
+            
+            // Valores padrão se for nova regra
+            let trigger = { keyword: '', response: '', matchType: 'exact' };
+            
+            // Se for edição, puxa os dados reais
+            if (index !== -1) {
+                trigger = list[index];
+            }
+
+            // Preenche o Modal
+            document.getElementById('editor-matchType').value = trigger.matchType;
+            document.getElementById('editor-keyword').value = trigger.keyword;
+            document.getElementById('editor-response').value = trigger.response;
+            
+            toggleEditorKeywordField(); 
+            
+            // Exibe o botão de apagar apenas se estiver editando uma regra existente
+            document.getElementById('btn-delete-trigger').style.display = index === -1 ? 'none' : 'block';
+            
+            // Mostra o Modal de Editor
+            document.getElementById('trigger-editor-modal').style.display = 'flex';
+        }
+
+        // Oculta o campo de palavra chave se escolher "Todas as mensagens"
+        function toggleEditorKeywordField() {
+            const type = document.getElementById('editor-matchType').value;
+            const wrapper = document.getElementById('editor-keyword-wrapper');
+            if (type === 'all') {
+                wrapper.style.display = 'none';
+            } else {
+                wrapper.style.display = 'block';
+            }
+        }
+
+        // 3. Salva a regra que foi digitada no Editor Grande
+        function saveCurrentTrigger() {
+            const matchType = document.getElementById('editor-matchType').value;
+            const keyword = document.getElementById('editor-keyword').value.trim();
+            const response = document.getElementById('editor-response').value.trim();
+
+            if (matchType !== 'all' && keyword === '') {
+                showFeedback(false, "Digite uma palavra-chave.");
+                return;
+            }
+            if (response === '') {
+                showFeedback(false, "Digite a mensagem de resposta.");
+                return;
+            }
+
+            const list = currentEditingModal === 'create' ? createTriggers : (currentEditingModal === 'group' ? groupTriggers : editTriggers);
+            const newTrigger = { matchType, keyword, response };
+
+            if (currentEditingIndex === -1) {
+                list.push(newTrigger); // Nova
+            } else {
+                list[currentEditingIndex] = newTrigger; // Atualizando existente
+            }
+
+            document.getElementById('trigger-editor-modal').style.display = 'none';
+            renderTriggers(currentEditingModal);
+        }
+
+        // 4. Exclui a regra direto do Editor
+        function deleteCurrentTrigger() {
+            const list = currentEditingModal === 'create' ? createTriggers : (currentEditingModal === 'group' ? groupTriggers : editTriggers);
+            if (currentEditingIndex !== -1) {
+                list.splice(currentEditingIndex, 1);
+            }
+            document.getElementById('trigger-editor-modal').style.display = 'none';
+            renderTriggers(currentEditingModal);
+        }
+
+        // Copiar Link de Indicação
+        function copyRefLink() {
+            const input = document.getElementById('my-ref-link');
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            showFeedback(true, 'Link de indicação copiado!');
+        }
+        // --- SISTEMA LIVE CHAT (WHATSAPP WEB CLONE) ---
+        let currentLiveSession = null;
+        let currentLiveJid = null;
+        let liveChatsData = new Map();
+
+        let livechatTimeout;
+        function openLiveChat(sessionName) {
+            currentLiveSession = sessionName;
+            currentLiveJid = null;
+            document.getElementById('lc-bot-name').innerText = botsData[sessionName]?.publicName || sessionName;
+            document.getElementById('livechat-modal').style.display = 'flex';
+            document.getElementById('lc-empty-state').style.display = 'flex';
+            document.getElementById('lc-active-chat').style.display = 'none';
+            
+            // Garante que a lista de contatos apareça primeiro no mobile
+            document.querySelector('.livechat-modal').classList.remove('mobile-chat-active');
+            
+            const listContainer = document.getElementById('lc-contacts-list');
+            listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #8696a0; font-size: 0.85rem;"><i class="fas fa-spinner fa-spin"></i> Conectando ao terminal...</div>';
+            
+            // Proteção contra carregamento infinito (se o robô estiver offline)
+            clearTimeout(livechatTimeout);
+            livechatTimeout = setTimeout(() => {
+                if (listContainer.innerHTML.includes('Conectando')) {
+                    listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #8696a0; font-size: 0.85rem;">Nenhuma mensagem na memória ou robô offline.<br><br>Envie um "Oi" para o robô para iniciar o Live Chat.</div>';
+                }
+            }, 4000);
+
+            // Solicita os chats para o servidor
+            socket.emit('livechat:request-chats', { sessionName });
+        }
+
+        function closeLiveChat() {
+            document.getElementById('livechat-modal').style.display = 'none';
+            document.querySelector('.livechat-modal').classList.remove('mobile-chat-active');
+            currentLiveSession = null;
+            currentLiveJid = null;
+        }
+
+        function backToLiveChats() {
+            // Remove a classe para voltar a exibir a lista de contatos no mobile
+            document.querySelector('.livechat-modal').classList.remove('mobile-chat-active');
+            currentLiveJid = null;
+            document.querySelectorAll('.livechat-contact').forEach(el => el.classList.remove('active'));
+        }
+
+        function filterLiveChats(query) {
+            const q = query.toLowerCase();
+            document.querySelectorAll('.livechat-contact').forEach(el => {
+                const name = el.getAttribute('data-name').toLowerCase();
+                el.style.display = name.includes(q) ? 'flex' : 'none';
+            });
+        }
+
+        function selectLiveChat(jid, name, profilePicUrl) {
+            currentLiveJid = jid;
+            
+            // UI Updates
+            document.querySelectorAll('.livechat-contact').forEach(el => el.classList.remove('active'));
+            const activeEl = document.getElementById(`lc-contact-${jid.replace(/[^a-zA-Z0-9]/g, '')}`);
+            if(activeEl) {
+                activeEl.classList.add('active');
+                const badge = activeEl.querySelector('.livechat-unread');
+                if(badge) badge.remove();
+            }
+
+            document.getElementById('lc-empty-state').style.display = 'none';
+            document.getElementById('lc-active-chat').style.display = 'flex';
+            document.getElementById('lc-current-name').innerText = name;
+            
+            // Adiciona classe para transição no mobile
+            document.querySelector('.livechat-modal').classList.add('mobile-chat-active');
+            
+            const avatarContainer = document.getElementById('lc-current-avatar');
+            if (profilePicUrl) {
+                avatarContainer.outerHTML = `<img src="${profilePicUrl}" class="livechat-avatar" id="lc-current-avatar" style="object-fit: cover;" onerror="this.outerHTML='<div class=\\'livechat-avatar\\' id=\\'lc-current-avatar\\'>${name.charAt(0).toUpperCase()}</div>'">`;
+            } else {
+                avatarContainer.outerHTML = `<div class="livechat-avatar" id="lc-current-avatar">${name.charAt(0).toUpperCase()}</div>`;
+            }
+
+            document.getElementById('lc-messages-container').innerHTML = '<div style="text-align: center; margin-top: 20px; color: #8696a0;"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+
+            // Solicita mensagens
+            socket.emit('livechat:request-messages', { sessionName: currentLiveSession, jid });
+        }
+
+        function handleLiveChatKey(e) {
+            if (e.key === 'Enter') sendLiveChatMessage();
+        }
+
+        function sendLiveChatMessage() {
+            const input = document.getElementById('lc-input-msg');
+            const text = input.value.trim();
+            if (!text || !currentLiveJid || !currentLiveSession) return;
+
+            // Envia pro servidor
+            socket.emit('livechat:send-message', { sessionName: currentLiveSession, jid: currentLiveJid, text });
+            
+            // Limpa input
+            input.value = '';
+            
+            // Opcional: Pausar a IA por 10 min automaticamente ao assumir o controle
+            socket.emit('livechat:pause-ai', { sessionName: currentLiveSession, jid: currentLiveJid });
+            showFeedback(true, 'IA pausada por 10 min para este contato. Você assumiu o controle.');
+        }
+
+        function renderLiveMessage(msg) {
+            const container = document.getElementById('lc-messages-container');
+            const date = new Date(msg.timestamp);
+            const timeStr = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+            
+            const div = document.createElement('div');
+            div.className = `livechat-bubble ${msg.fromMe ? 'sent' : 'received'}`;
+            // Remove quebras na visualização (opcional) ou mantem
+            div.innerHTML = `${msg.text.replace(/\n/g, '<br>')} <span class="livechat-time">${timeStr}</span>`;
+            
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        
     </script>
 </body>
 </html>
-
