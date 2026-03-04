@@ -18,12 +18,15 @@
     "express": "^4.19.2",
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.0",
+    "google-tts-api": "^2.0.2",
     "mercadopago": "^2.0.11",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
+    "pdf-parse": "^2.4.5",
+    "pdf2json": "^4.0.2",
     "pino": "^9.1.0",
     "qrcode": "^1.5.4",
     "session-file-store": "^1.5.0",
@@ -31,6 +34,7 @@
     "socket.io-client": "^4.8.3",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
-    "telegraf": "^4.16.3"
+    "telegraf": "^4.16.3",
+    "web-push": "^3.6.7"
   }
 }
