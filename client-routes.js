@@ -37,10 +37,15 @@ if (!fs.existsSync(CLIENTS_DB_PATH)) writeJSON(CLIENTS_DB_PATH,[]);
 if (!fs.existsSync(CAMPAIGNS_DB_PATH)) writeJSON(CAMPAIGNS_DB_PATH,[]);
 if (!fs.existsSync(PAYMENTS_DB_PATH)) writeJSON(PAYMENTS_DB_PATH,[]);
 
-// Função auxiliar para formatar número (Adiciona 55 se necessário)
+// Função auxiliar para formatar número (Preserva IDs do WhatsApp como @lid)
 function formatNumber(num) {
     if (!num) return '';
-    let cleanNum = String(num).replace(/\D/g, '');
+    const strNum = String(num).trim();
+    
+    // Se já é um ID interno do WhatsApp (@s.whatsapp.net ou @lid), NÃO formata!
+    if (strNum.includes('@')) return strNum;
+    
+    let cleanNum = strNum.replace(/\D/g, '');
     if (cleanNum.length >= 10 && cleanNum.length <= 11) {
         return '55' + cleanNum;
     }
@@ -152,8 +157,31 @@ async function executeCampaign(io, campaign, generatePix, db, botController) {
 
     let successCount = 0;
     let failCount = 0;
+    let totalClients = targetClients.length;
+    let currentIndex = 0;
 
     for (const client of targetClients) {
+        currentIndex++;
+        
+        // VERIFICA SE A CAMPANHA FOI CANCELADA PELO BOTÃO DO PAINEL
+        const checkCamps = readJSON(CAMPAIGNS_DB_PATH);
+        const campState = checkCamps.find(c => c.id === campaign.id);
+        if (!campState || campState.status === 'canceled') {
+            console.log(`[CAMPANHA] A campanha "${campaign.name}" foi cancelada pelo usuário durante o envio.`);
+            break; // Interrompe o loop imediatamente
+        }
+
+        // Emite o progresso AO VIVO para a tela do Gestor
+        io.to(campaign.owner.toLowerCase()).emit('campaign:progress', {
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            clientName: client.name,
+            clientNumber: client.number,
+            profilePicUrl: client.profilePicUrl,
+            current: currentIndex,
+            total: totalClients
+        });
+
         // --- NOVA VARIÁVEL: {saudacao} COM FUSO HORÁRIO DO BRASIL ---
         // Força a pegar a hora atual no fuso de Brasília, independente de onde o servidor está hospedado
         const hourStr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hourCycle: 'h23' });
@@ -233,8 +261,10 @@ async function executeCampaign(io, campaign, generatePix, db, botController) {
         const payload = {
             targetBot: campaign.targetBot,
             clientNumber: formattedNumber,
+            clientId: client.id, // ID para atualizar a foto
+            owner: campaign.owner, // Dono para atualizar a tela
             message: message + pixErrorMsg,
-            pixData: pixData // Envia o PIX junto no mesmo payload para o bot processar
+            pixData: pixData 
         };
 
         // Sistema de Retry (Tenta até 3 vezes)
@@ -280,18 +310,37 @@ async function executeCampaign(io, campaign, generatePix, db, botController) {
         const campaignIndex = allCampaigns.findIndex(c => c.id === campaign.id);
         
         if (campaignIndex !== -1) {
-            if (successCount === 0) {
-                allCampaigns[campaignIndex].status = 'failed';
-                io.to(campaign.owner.toLowerCase()).emit('feedback', { success: false, message: `A campanha "${campaign.name}" falhou. Nenhuma mensagem foi enviada.` });
-            } else if (failCount > 0) {
-                allCampaigns[campaignIndex].status = 'sent';
-                io.to(campaign.owner.toLowerCase()).emit('feedback', { success: true, message: `Campanha "${campaign.name}" enviada com ${failCount} falha(s).` });
+            
+            if (allCampaigns[campaignIndex].status === 'canceled') {
+                // Se foi cancelada, não altera o status para 'sent', apenas avisa o frontend
+                io.to(campaign.owner.toLowerCase()).emit('campaign:finished', {
+                    campaignName: campaign.name + ' (Cancelada)',
+                    successCount,
+                    failCount
+                });
+                io.to(campaign.owner.toLowerCase()).emit('feedback', { success: true, message: `Campanha "${campaign.name}" foi interrompida.` });
             } else {
-                allCampaigns[campaignIndex].status = 'sent';
-                io.to(campaign.owner.toLowerCase()).emit('feedback', { success: true, message: `Campanha "${campaign.name}" enviada com sucesso para todos!` });
+                // Lógica de finalização normal
+                io.to(campaign.owner.toLowerCase()).emit('campaign:finished', {
+                    campaignName: campaign.name,
+                    successCount,
+                    failCount
+                });
+
+                if (successCount === 0) {
+                    allCampaigns[campaignIndex].status = 'failed';
+                    io.to(campaign.owner.toLowerCase()).emit('feedback', { success: false, message: `A campanha "${campaign.name}" falhou. Nenhuma mensagem foi enviada.` });
+                } else if (failCount > 0) {
+                    allCampaigns[campaignIndex].status = 'sent';
+                    io.to(campaign.owner.toLowerCase()).emit('feedback', { success: true, message: `Campanha "${campaign.name}" enviada com ${failCount} falha(s).` });
+                } else {
+                    allCampaigns[campaignIndex].status = 'sent';
+                    io.to(campaign.owner.toLowerCase()).emit('feedback', { success: true, message: `Campanha "${campaign.name}" enviada com sucesso para todos!` });
+                }
+                
+                writeJSON(CAMPAIGNS_DB_PATH, allCampaigns);
             }
             
-            writeJSON(CAMPAIGNS_DB_PATH, allCampaigns);
             const userCampaigns = allCampaigns.filter(c => c.owner === campaign.owner);
             io.to(campaign.owner.toLowerCase()).emit('campaigns:list', userCampaigns);
         }
@@ -330,22 +379,44 @@ function clientRoutes(io, generatePix, db, botController) {
     cron.schedule('* * * * *', async () => {
         try {
             const campaigns = readJSON(CAMPAIGNS_DB_PATH);
-            const now = new Date();
-            const currentDay = now.getDate();
-            const currentHour = now.getHours();
+            const nowTime = Date.now(); // Tempo universal exato
+            
+            // --- CORREÇÃO DE FUSO HORÁRIO (TIMEZONE) ---
+            // Força a leitura do dia, hora e minuto atual no fuso do Brasil (UTC-3)
+            const nowBRStr = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+            const nowBR = new Date(nowBRStr);
+            const currentDay = nowBR.getDate();
+            const currentHour = nowBR.getHours();
+            const currentMinute = nowBR.getMinutes();
 
             const toRun =[];
 
-            if (currentHour === 9 && now.getMinutes() === 0) {
+            // 1. Mensais: Dispara às 09:00 (Horário de Brasília) do dia estipulado
+            if (currentHour === 9 && currentMinute === 0) {
                 const monthlyCampaigns = campaigns.filter(c => 
                     c.status === 'active' && c.scheduleType === 'monthly' && parseInt(c.scheduleDay) === currentDay
                 );
                 toRun.push(...monthlyCampaigns);
             }
 
-            const scheduledCampaigns = campaigns.filter(c => 
-                c.status === 'active' && c.scheduleType === 'scheduled' && c.scheduleDate && new Date(c.scheduleDate) <= now
-            );
+            // 2. Agendamento Fixo: Garante que a data do HTML seja validada no Fuso do Brasil
+            const scheduledCampaigns = campaigns.filter(c => {
+                if (c.status !== 'active' || c.scheduleType !== 'scheduled' || !c.scheduleDate) return false;
+                
+                let dateStr = c.scheduleDate;
+                
+                // O HTML envia a data no formato "YYYY-MM-DDThh:mm" sem fuso.
+                // Aqui nós forçamos o "-03:00" para que a VPS não confunda com o fuso local dela.
+                if (dateStr.length === 16) { 
+                    dateStr += ':00-03:00'; 
+                }
+                
+                const scheduledTime = new Date(dateStr).getTime();
+                
+                // Só dispara se o tempo agendado (agora em UTC-3) for igual ou menor que o momento exato agora
+                return scheduledTime <= nowTime;
+            });
+            
             toRun.push(...scheduledCampaigns);
 
             // Otimização: Lê e escreve no disco apenas UMA vez, em vez de fazer isso dentro do loop
@@ -394,20 +465,28 @@ function clientRoutes(io, generatePix, db, botController) {
             socket.emit('clients:list', clients.filter(c => c.owner === user.username));
         });
 
-        socket.on('clients:add-bulk', (clientsData) => {
-            if (!Array.isArray(clientsData)) return;
+        socket.on('clients:add-bulk', (data) => {
+            if (!data || !Array.isArray(data)) return;
             const clients = readJSON(CLIENTS_DB_PATH);
             let addedCount = 0;
-            clientsData.forEach(c => {
+            
+            data.forEach(c => {
                 if (c.number) {
                     const finalNumber = formatNumber(c.number);
-                    const exists = clients.some(existing => existing.owner === user.username && existing.number === finalNumber);
+                    const exists = clients.some(existing => existing.number === finalNumber && existing.owner === user.username);
                     if (!exists) {
-                        clients.push({ id: crypto.randomUUID(), owner: user.username, name: c.name || 'Cliente', number: finalNumber });
+                        clients.push({ 
+                            id: crypto.randomUUID(), 
+                            owner: user.username, 
+                            name: c.name || 'Cliente', 
+                            number: finalNumber,
+                            profilePicUrl: c.profilePicUrl || null 
+                        });
                         addedCount++;
                     }
                 }
             });
+            
             writeJSON(CLIENTS_DB_PATH, clients);
             socket.emit('clients:added', { success: true, message: `${addedCount} importados.` });
             socket.emit('clients:list', clients.filter(c => c.owner === user.username));
@@ -488,6 +567,17 @@ function clientRoutes(io, generatePix, db, botController) {
                 writeJSON(CAMPAIGNS_DB_PATH, campaigns);
                 socket.emit('campaigns:list', campaigns.filter(c => c.owner === user.username));
                 socket.emit('feedback', { success: true, message: 'Campanhas excluídas.' });
+            }
+        });
+
+        // NOVO: Rota para cancelar uma campanha em andamento
+        socket.on('campaigns:cancel', (data) => {
+            const campaigns = readJSON(CAMPAIGNS_DB_PATH);
+            const idx = campaigns.findIndex(c => c.id === data.id);
+            if (idx !== -1 && (campaigns[idx].owner === user.username || user.isAdmin)) {
+                campaigns[idx].status = 'canceled';
+                writeJSON(CAMPAIGNS_DB_PATH, campaigns);
+                socket.emit('campaigns:list', campaigns.filter(c => c.owner === user.username));
             }
         });
 
