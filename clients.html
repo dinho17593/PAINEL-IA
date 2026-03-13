@@ -354,14 +354,109 @@
             width: 100%;
         }
     }
+
+    /* --- ESTILOS DE AVATAR E LEADS --- */
+    .user-avatar-initial {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+        color: white; display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem; font-weight: 800; text-transform: uppercase; flex-shrink: 0;
+    }
+    .lead-list-item {
+        display: flex; align-items: center; gap: 12px; padding: 12px; 
+        border-radius: 10px; transition: all 0.2s ease; cursor: pointer;
+        border-bottom: 1px solid rgba(255,255,255,0.02);
+    }
+    .lead-list-item:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.1);
+    }
+
+    /* --- WIDGET DE PROGRESSO DE ENVIO AO VIVO --- */
+    #sending-progress-widget {
+        position: fixed;
+        bottom: 25px;
+        right: -400px;
+        width: 320px;
+        background: rgba(24, 24, 27, 0.98);
+        backdrop-filter: blur(15px);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--primary);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        z-index: 999999; /* Forçado para ficar por cima de modais e tabelas */
+        transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+    }
+    #sending-progress-widget.show {
+        right: 25px;
+    }
+    .sp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .sp-title { font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+    .sp-title i { color: var(--primary); }
+    .sp-client { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+    .sp-client-info { display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+    .sp-bar-bg { background: rgba(255,255,255,0.05); height: 8px; border-radius: 10px; overflow: hidden; position: relative; margin-bottom: 5px; }
+    .sp-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.3s ease; box-shadow: 0 0 10px var(--primary-glow); }
+    .sp-status { font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: 600; }
+    
+    @media (max-width: 768px) {
+        #sending-progress-widget {
+            width: calc(100% - 40px);
+            bottom: 20px;
+            right: 20px; /* Garante que fique alinhado na tela no mobile */
+            transform: translateY(200%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #sending-progress-widget.show {
+            transform: translateY(0); /* Faz ele subir do rodapé elegantemente */
+        }
+    }
     </style>
 </head>
 <body>
     <div id="feedback-area"></div>
 
+    <!-- WIDGET DE ENVIO AO VIVO -->
+    <div id="sending-progress-widget">
+        <div class="sp-header">
+            <div class="sp-title"><i class="fas fa-paper-plane fa-fade"></i> <span id="sp-campaign-name">Enviando...</span></div>
+            <div style="font-size: 0.75rem; background: rgba(99, 102, 241, 0.1); color: var(--primary); padding: 3px 10px; border-radius: 10px; font-weight: bold;" id="sp-count">0/0</div>
+        </div>
+        
+        <div class="sp-client">
+            <!-- Foto de Perfil Dinâmica -->
+            <img id="sp-client-avatar" src="" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); display: none; flex-shrink: 0;">
+            <!-- Letra Inicial do Nome se não tiver foto -->
+            <div id="sp-client-icon-fallback" class="user-avatar-initial" style="width: 45px; height: 45px; font-size: 1.3rem; flex-shrink: 0; box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                <i class="fas fa-user"></i>
+            </div>
+            
+            <div class="sp-client-info">
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Enviando para:</span>
+                <strong style="color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="sp-client-name">Aguardando...</strong>
+            </div>
+        </div>
+        
+        <div class="sp-bar-bg">
+            <div class="sp-bar-fill" id="sp-progress-bar"></div>
+        </div>
+        <div class="sp-status">
+            <span>Progresso</span>
+            <span id="sp-percentage" style="color: var(--text-main);">0%</span>
+        </div>
+        
+        <button id="btn-cancel-campaign" onclick="cancelCurrentCampaign()" style="width: 100%; background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.3); padding: 12px; border-radius: 12px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fas fa-times-circle" style="font-size: 1rem;"></i> Cancelar Envio Agora
+        </button>
+    </div>
+
     <header>
         <div class="nav-bar">
-            <a href="/" class="nav-btn"><i class="fas fa-chevron-left"></i></a>
+            <!-- Inteligência que verifica se o usuário veio do painel e apenas "desfaz" o passo, mantendo a aba anterior aberta -->
+            <a href="javascript:void(0)" onclick="if(document.referrer.includes(window.location.host)) { history.back(); } else { window.location.href='/'; }" class="nav-btn"><i class="fas fa-chevron-left"></i></a>
             <div class="brand-center"><i class="fas fa-users-cog"></i>Gestor de Cobranças</div>
             <div style="width: 38px;"></div>
         </div>
@@ -460,16 +555,22 @@
                             <i class="fas fa-trash"></i> Excluir (<span id="count-clients">0</span>)
                         </button>
                     </div>
-                    <button id="btn-add-client" class="btn-primary" onclick="openClientModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem;"><i class="fas fa-plus"></i> Adicionar</button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="openClientModal(); switchTab('leads'); fetchLeadsForImport();" style="width:auto; padding: 8px 16px; font-size:0.8rem; background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid var(--primary); box-shadow: none;">
+                            <i class="fas fa-cloud-download-alt"></i> Importar Leads
+                        </button>
+                        <button id="btn-add-client" class="btn-primary" onclick="openClientModal()" style="width:auto; padding: 8px 16px; font-size:0.8rem;">
+                            <i class="fas fa-plus"></i> Adicionar
+                        </button>
+                    </div>
                 </div>
                 <div class="table-wrapper">
                     <table class="data-table" id="clients-table">
                         <thead>
                             <tr>
                                 <th class="col-check"><input type="checkbox" class="header-selector" onchange="toggleSelectAll(this, 'client-row')"></th>
-                                <th>Nome</th>
-                                <th>Número</th>
-                                <th class="col-actions">Ação</th>
+                                <th>Cliente</th>
+                                <th class="col-actions">Ações</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -558,6 +659,7 @@
                 <button class="tab-btn" onclick="switchTab('paste')">Colar Lista</button>
                 <button class="tab-btn" onclick="switchTab('file')">Arquivo .txt</button>
                 <button class="tab-btn" onclick="switchTab('contacts')">Agenda</button>
+                <button class="tab-btn" onclick="switchTab('leads'); fetchLeadsForImport()">Meus Leads</button>
             </div>
 
             <!-- Aba Individual -->
@@ -610,6 +712,26 @@
                     </button>
                     <p id="contact-picker-error" style="color: var(--red); font-size: 0.85rem; margin-top: 10px; display: none;"></p>
                 </div>
+            </div>
+
+            <!-- NOVA ABA: Meus Leads -->
+            <div id="tab-leads" class="tab-content">
+                <div style="margin-bottom: 15px;">
+                    <p class="help-text">Selecione os contatos capturados pelos seus robôs para adicioná-los à sua lista de clientes/cobrança.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="select-all-leads" onchange="toggleAllLeads(this)" style="width: 16px; height: 16px; accent-color: var(--primary);"> 
+                            Selecionar Todos
+                        </label>
+                        <span id="leads-count-badge" style="font-size: 0.7rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold;">0 leads</span>
+                    </div>
+                    <div id="import-leads-list" class="checkbox-list" style="max-height: 300px;">
+                        <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">Carregando leads...</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-primary" onclick="importSelectedLeads()">
+                    <i class="fas fa-cloud-download-alt"></i> Importar Selecionados
+                </button>
             </div>
 
         </div>
@@ -948,13 +1070,39 @@
             }
 
             clients.forEach(client => {
+                const safeName = client.name || 'Cliente';
+                const initial = safeName.charAt(0).toUpperCase();
+                
+                const avatarHtml = client.profilePicUrl 
+                    ? `<img src="${client.profilePicUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border);" onerror="this.outerHTML='<div class=\\'user-avatar-initial\\' style=\\'width: 36px; height: 36px; font-size: 1rem;\\'>${initial}</div>'">` 
+                    : `<div class="user-avatar-initial" style="width: 36px; height: 36px; font-size: 1rem;">${initial}</div>`;
+
+                let displayRef = client.number || '';
+                let isLid = false;
+                if (displayRef.includes('@lid')) {
+                    isLid = true;
+                    displayRef = 'Número Oculto';
+                } else {
+                    displayRef = displayRef.replace('@s.whatsapp.net', '').replace('@c.us', '');
+                }
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="col-check"><input type="checkbox" class="row-selector client-row" value="${client.id}" onchange="updateBulkButton('client-row')"></td>
-                    <td>${client.name}</td>
-                    <td>${client.number}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            ${avatarHtml}
+                            <div style="display: flex; flex-direction: column;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">${safeName}</span>
+                                    ${isLid ? '<span style="font-size:0.6rem; background:rgba(99, 102, 241, 0.2); color:var(--primary); padding:2px 6px; border-radius:4px; font-weight:bold; border: 1px solid rgba(99, 102, 241, 0.4);">LEAD</span>' : ''}
+                                </div>
+                                <span style="color: var(--text-muted); font-size: 0.75rem;">${displayRef}</span>
+                            </div>
+                        </div>
+                    </td>
                     <td class="col-actions" style="white-space: nowrap;">
-                        <i class="fas fa-file-invoice-dollar action-icon" style="color: var(--green);" title="Cobrança Avulsa" onclick="openQuickCharge('${client.id}', '${client.name}')"></i>
+                        <i class="fas fa-file-invoice-dollar action-icon" style="color: var(--green);" title="Cobrança Avulsa" onclick="openQuickCharge('${client.id}', '${safeName}')"></i>
                         <i class="fas fa-trash action-icon delete" title="Excluir" onclick="deleteClient('${client.id}')"></i>
                     </td>
                 `;
@@ -1092,6 +1240,112 @@
                 if(groupDiv) groupDiv.style.display = 'block';
             }
         }
+
+        // ================= LÓGICA DE IMPORTAÇÃO DE LEADS =================
+        let loadedLeadsForImport =[];
+
+        function fetchLeadsForImport() {
+            document.getElementById('import-leads-list').innerHTML = '<p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px;"><i class="fas fa-circle-notch fa-spin"></i> Buscando contatos nos robôs...</p>';
+            socket.emit('get-leads'); // Pede os leads pro backend
+        }
+
+        // Recebe os leads do backend e monta a lista de seleção visualmente rica
+        socket.on('receive-leads', (leads) => {
+            const listDiv = document.getElementById('import-leads-list');
+            
+            // Só atualiza a tela se o modal estiver aberto
+            if (document.getElementById('client-modal').style.display !== 'flex') return;
+
+            loadedLeadsForImport = leads ||[];
+            document.getElementById('leads-count-badge').innerText = `${loadedLeadsForImport.length} contatos`;
+            listDiv.innerHTML = '';
+            
+            if (loadedLeadsForImport.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px;">Nenhum contato foi capturado pelos robôs ainda.</p>';
+                return;
+            }
+
+            loadedLeadsForImport.forEach((lead, index) => {
+                // 1. Tratamento do nome e geração do Avatar
+                const safeName = lead.name || 'Cliente';
+                const initial = safeName.charAt(0).toUpperCase();
+                
+                const avatarHtml = lead.profilePicUrl 
+                    ? `<img src="${lead.profilePicUrl}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border);" onerror="this.outerHTML='<div class=\\'user-avatar-initial\\'>${initial}</div>'">` 
+                    : `<div class="user-avatar-initial">${initial}</div>`;
+
+                // 2. Limpeza do número e formatação da tag "LEAD"
+                let displayRef = lead.number || '';
+                let isLid = false;
+                
+                // Se for um contato oculto (vindo de anúncios do Facebook/Insta)
+                if (displayRef.includes('@lid')) {
+                    isLid = true;
+                    displayRef = 'Lead Oculto'; 
+                } else {
+                    // Limpa sufixos técnicos do WhatsApp normal
+                    displayRef = displayRef.replace('@s.whatsapp.net', '').replace('@c.us', '');
+                }
+
+                const div = document.createElement('div');
+                // Usa a nova classe CSS para hover e estrutura melhorada
+                div.className = 'lead-list-item checkbox-item';
+                div.style.padding = '10px 12px'; 
+                
+                div.innerHTML = `
+                    <input type="checkbox" id="import-lead-${index}" class="lead-import-checkbox" value="${index}" style="margin-right: 5px;">
+                    <label for="import-lead-${index}" style="display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; margin: 0;">
+                        ${avatarHtml}
+                        <div style="display: flex; flex-direction: column; overflow: hidden;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="color: var(--text-main); font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeName}</span>
+                                ${isLid ? '<span style="font-size:0.6rem; background:rgba(99, 102, 241, 0.2); color:var(--primary); padding:2px 6px; border-radius:4px; font-weight:bold; border: 1px solid rgba(99, 102, 241, 0.4);">LEAD</span>' : ''}
+                            </div>
+                            <span style="color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${isLid ? 'Número Oculto' : displayRef} • Robô: <strong style="color:#ccc;">${lead.botName || 'Desconhecido'}</strong>
+                            </span>
+                        </div>
+                    </label>
+                `;
+                listDiv.appendChild(div);
+            });
+            
+            // Desmarca o "Selecionar todos" por padrão
+            document.getElementById('select-all-leads').checked = false;
+        });
+
+        function toggleAllLeads(source) {
+            const checkboxes = document.querySelectorAll('.lead-import-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function importSelectedLeads() {
+            const checkboxes = document.querySelectorAll('.lead-import-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showFeedback(false, 'Selecione pelo menos um contato para importar.');
+                return;
+            }
+
+            const clientsToImport =[];
+            checkboxes.forEach(cb => {
+                const leadIndex = cb.value;
+                const lead = loadedLeadsForImport[leadIndex];
+                if (lead) {
+                    clientsToImport.push({
+                        name: lead.name || 'Cliente',
+                        number: lead.number,
+                        profilePicUrl: lead.profilePicUrl || null
+                    });
+                }
+            });
+
+            // Envia para o backend usando a mesma rota de importação em massa que a agenda já usa
+            socket.emit('clients:add-bulk', clientsToImport);
+            
+            // Fecha o modal após importar
+            closeClientModal();
+        }
+        // =================================================================
 
         // Lógica de Formulários e Ações
         
@@ -1525,6 +1779,89 @@ function openQuickCharge(clientId, clientName) {
             }
         });
 
+        // --- BÔNUS: RECEBER PROGRESSO AO VIVO DA CAMPANHA ---
+        let currentActiveCampaignId = null;
+
+        socket.on('campaign:progress', (data) => {
+            const widget = document.getElementById('sending-progress-widget');
+            if (widget) {
+                // Garante que o botão de cancelar volte ao estado normal a cada nova campanha
+                const btnCancel = document.getElementById('btn-cancel-campaign');
+                if (btnCancel && btnCancel.disabled) {
+                    btnCancel.innerHTML = '<i class="fas fa-times-circle" style="font-size: 1rem;"></i> Cancelar Envio Agora';
+                    btnCancel.disabled = false;
+                }
+
+                widget.classList.add('show');
+                currentActiveCampaignId = data.campaignId;
+                
+                document.getElementById('sp-campaign-name').innerText = data.campaignName;
+                document.getElementById('sp-count').innerText = `${data.current}/${data.total}`;
+                
+                const safeName = data.clientName || 'Cliente';
+                document.getElementById('sp-client-name').innerText = `${safeName} (${data.clientNumber})`;
+                
+                // Trata a foto de perfil com Fallback Bonito (Inicial do nome)
+                const avatarImg = document.getElementById('sp-client-avatar');
+                const fallbackIcon = document.getElementById('sp-client-icon-fallback');
+                
+                if (data.profilePicUrl) {
+                    avatarImg.src = data.profilePicUrl;
+                    avatarImg.style.display = 'block';
+                    fallbackIcon.style.display = 'none';
+                } else {
+                    avatarImg.style.display = 'none';
+                    // Pega a primeira letra do nome do cliente e coloca no círculo
+                    fallbackIcon.innerHTML = safeName.charAt(0).toUpperCase();
+                    fallbackIcon.style.display = 'flex';
+                }
+                
+                const pct = Math.round((data.current / data.total) * 100);
+                document.getElementById('sp-progress-bar').style.width = `${pct}%`;
+                document.getElementById('sp-percentage').innerText = `${pct}%`;
+            }
+        });
+
+        socket.on('campaign:finished', (data) => {
+            const widget = document.getElementById('sending-progress-widget');
+            if (widget) {
+                // Altera o visual dependendo se foi sucesso ou cancelado
+                const isCanceled = data.campaignName && data.campaignName.includes('Cancelada');
+                document.getElementById('sp-campaign-name').innerHTML = isCanceled ? data.campaignName : 'Concluído!';
+                document.getElementById('sp-client-name').innerText = isCanceled ? 'Envio interrompido pelo usuário.' : 'Todos os envios foram finalizados.';
+                document.getElementById('sp-progress-bar').style.backgroundColor = isCanceled ? 'var(--red)' : 'var(--green)';
+                
+                // Esconde depois de 4 segundos
+                setTimeout(() => {
+                    widget.classList.remove('show');
+                    // Reseta cores pro padrão após esconder
+                    setTimeout(() => {
+                        document.getElementById('sp-progress-bar').style.backgroundColor = 'var(--primary)';
+                        document.getElementById('sp-progress-bar').style.width = '0%';
+                        
+                        const btn = document.getElementById('btn-cancel-campaign');
+                        if (btn) {
+                            btn.innerHTML = '<i class="fas fa-times-circle"></i> Cancelar Envio';
+                            btn.disabled = false;
+                        }
+                    }, 500);
+                }, 4000);
+            }
+        });
+
+        window.cancelCurrentCampaign = function() {
+            if (currentActiveCampaignId) {
+                if (confirm('Tem certeza que deseja cancelar o envio desta campanha?\n\nOs clientes que já receberam não serão afetados, mas o restante será abortado.')) {
+                    socket.emit('campaigns:cancel', { id: currentActiveCampaignId });
+                    
+                    const btn = document.getElementById('btn-cancel-campaign');
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Parando robô...';
+                    btn.disabled = true;
+                }
+            }
+        };
+
     </script>
 </body>
 </html>
+
